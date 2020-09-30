@@ -12,6 +12,9 @@
 #include <fstream>
 #include <cstring>
 #include <ctime>
+#include <mutex>
+
+typedef std::mutex Mutex;
 
 class ArcLogger {
 	public:
@@ -54,12 +57,11 @@ class ArcLogger {
         /* CONF FILE REDIRECTION */
 
         static void activateFileRedirection();
-        static void desactivateFileRedirection();
+        static void deactivateFileRedirection();
         static bool isFileRedirectionActivated();
 
     private:
         static std::string getStrLogLevel(ArcLogger::LEVEL);
-        static void fileLog(std::stringstream &);
         static std::string getCurrentTime();
 
         static Mutex _logMutex;

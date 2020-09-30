@@ -21,7 +21,7 @@ std::ofstream ArcLogger::_ofs;
 
 ArcLogger::~ArcLogger()
 {
-    ArcLogger::desactivateFileRedirection();
+    ArcLogger::deactivateFileRedirection();
 }
 
 /* PUBLIC FUNCTIONS */
@@ -122,7 +122,7 @@ void ArcLogger::activateFileRedirection()
     _confMutex.unlock();
 }
 
-void ArcLogger::desactivateFileRedirection()
+void ArcLogger::deactivateFileRedirection()
 {
     _confMutex.lock();
     _fileRedirection = false;
@@ -163,7 +163,7 @@ std::string ArcLogger::getCurrentTime()
 {
     char buff[64];
     time_t rawTime = 0;
-    struct tm *now;
+    struct tm *now = nullptr;
 
     std::memset(buff, 0, 64);
     std::time(&rawTime);
