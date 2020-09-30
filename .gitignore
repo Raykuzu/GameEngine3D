@@ -6,6 +6,15 @@
 
 .idea
 
+# Build
+
+build
+
+# CMake
+
+cmake-build-debug
+cmake-build-release
+
 # Prerequisites
 *.d
 
