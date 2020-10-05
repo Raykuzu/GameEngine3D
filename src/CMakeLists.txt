@@ -5,4 +5,5 @@ include(utils/CMakeLists.txt)
 
 add_executable(game-engine-3D
         ${UTILS}
+        ${MODULES}
         main.cpp)
