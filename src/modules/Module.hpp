@@ -11,6 +11,14 @@ class Module {
         Module() = default;
         virtual ~Module() = default;
 
+        bool operator==(const Module &rhs) const {
+            return _moduleConfiguration.getOrder() == rhs._moduleConfiguration.getOrder();
+        }
+
+        bool operator!=(const Module &rhs) const {
+            return !(rhs == *this);
+        }
+
         bool operator<(const Module &rhs) const {
             return _moduleConfiguration.getOrder() < rhs._moduleConfiguration.getOrder();
         }
