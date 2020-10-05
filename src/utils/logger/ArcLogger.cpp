@@ -1,9 +1,6 @@
-/*
-** EPITECH PROJECT, 2019
-** Arcade
-** File description:
-** logger inc
-*/
+//
+// Created by raykuzu on 30/09/2020.
+//
 
 #include "ArcLogger.hpp"
 
