@@ -36,5 +36,4 @@ class ModuleConfiguration {
         std::string _name;
         int _order = 0;
         std::map<std::string, std::string> _parameters;
-
 };
