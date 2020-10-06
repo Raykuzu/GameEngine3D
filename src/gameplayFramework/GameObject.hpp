@@ -4,9 +4,9 @@
 
 #pragma once
 
-class Entity {
+class GameObject {
     public:
-        Entity() = default;
-        ~Entity() = default;
+        GameObject() = default;
+        ~GameObject() = default;
     private:
 };
