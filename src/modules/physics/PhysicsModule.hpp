@@ -10,5 +10,18 @@ class PhysicsModule : public Module {
     public:
         PhysicsModule() = default;
         ~PhysicsModule() override = default;
-    private:
+
+        void init() override {
+
+        }
+
+        void term() override {
+
+        }
+
+        void update() override {
+
+        }
+
+private:
 };

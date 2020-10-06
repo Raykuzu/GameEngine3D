@@ -39,8 +39,11 @@ class Module {
             this->_moduleConfiguration = configuration;
         }
 
-        virtual void update() = 0;
+        virtual void init() = 0;
 
+        virtual void term() = 0;
+
+        virtual void update() = 0;
 
     private:
         ModuleConfiguration _moduleConfiguration;
