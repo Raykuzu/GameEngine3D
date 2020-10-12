@@ -3,6 +3,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/logger/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/serialize/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/conf/CMakeLists.txt)
 include(${CMAKE_CURRENT_LIST_DIR}/math/CMakeLists.txt)
+include(${CMAKE_CURRENT_LIST_DIR}/uuid/CMakeLists.txt)
 
 list(APPEND UTILS
         ${LOGGER})
@@ -14,3 +15,5 @@ list(APPEND UTILS
         ${CONF})
 list(APPEND UTILS
         ${MATH})
+list(APPEND UTILS
+        ${UUID})
