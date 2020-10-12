@@ -48,4 +48,8 @@ cmake-build-release
 *.out
 *.app
 
+# VsCode
 *.vscode
+
+# Build Scripts
+compile.sh
