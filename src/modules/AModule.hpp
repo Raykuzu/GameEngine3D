@@ -51,9 +51,10 @@ class AModule {
 
         virtual void update() = 0;
 
+    protected:
+        std::vector<GameObject *> &_gameObjects;
+
     private:
         ModuleConfiguration _moduleConfiguration;
-
-        std::vector<GameObject *> &_gameObjects;
 };
 
