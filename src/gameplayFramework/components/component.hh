@@ -19,4 +19,4 @@ typedef struct component_s {
     explicit component_s(Component type) : _type(type) {};
 } component_t;
 
-typedef component_t *component_pointer;
+typedef component_t * component_p;

@@ -9,19 +9,31 @@
 #include "ArcLogger.hpp"
 #include "Uuid.hpp"
 #include "transform.hh"
+#include "functional"
 
-static std::map<Component, component_t> compMap = {
-        {Component::TRANSFORM, transform_t {}}
+static std::map<Component, std::function<component_p ()>> compMap = {
+        {Component::TRANSFORM, transform_t::createComponent}
 };
-
-class GameObjectManipulator;
 
 class GameObject {
     public:
         explicit GameObject(unsigned int flags) : _flags(flags), _alive(true) {
+            if (flags == 0x00) {
+                ArcLogger::warn("GameObject need one or more components");
+            }
+
+            for (const auto& compPair : compMap) {
+                if (flags & compPair.first) {
+                    _components.push_back(compPair.second());
+                }
+            }
             _id = uuid::generate_uuid_v4();
         };
-        virtual ~GameObject() = default;
+        virtual ~GameObject() {
+            for (const auto& comp : _components) {
+                delete comp;
+            }
+        };
 
         bool operator==(const GameObject &rhs) const {
             return _id == rhs._id;
@@ -35,11 +47,12 @@ class GameObject {
             return _flags;
         }
 
+
+
     private:
-        friend class GameObjectManipulator;
 
         unsigned int _flags;
         std::string _id;
         bool _alive;
-        std::vector<component_pointer> _components;
+        std::vector<component_p> _components;
 };

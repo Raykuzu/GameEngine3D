@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "Module.hpp"
+#include "AModule.hpp"
 
-class PhysicsModule : public Module {
+class PhysicsModule : public AModule {
     public:
         PhysicsModule() = default;
         ~PhysicsModule() override = default;
@@ -19,7 +19,7 @@ class PhysicsModule : public Module {
 
         }
 
-        void update() override {
+        void update(std::vector<GameObject *> gameObjects) override {
 
         }
 

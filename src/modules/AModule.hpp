@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <GameObject.hpp>
 #include "ModuleConfiguration.hpp"
 #include "component.hh"
 
@@ -44,24 +45,11 @@ class AModule {
             return _moduleConfiguration;
         }
 
-        void registerComponent(component_pointer component) {
-            ArcLogger::trace("AModule::registerComponent");
-            _components.push_back(component);
-        }
-
-        void unregisterComponent(component_pointer component) {
-            ArcLogger::trace("AModule::unregisterComponent");
-            _components.erase(std::remove(_components.begin(), _components.end(), component), _components.end());
-        }
-
         virtual void init() = 0;
 
         virtual void term() = 0;
 
-        virtual void update() = 0;
-
-    protected:
-        std::vector<component_pointer> _components;
+        virtual void update(std::vector<GameObject *> gameObject) = 0;
 
     private:
         ModuleConfiguration _moduleConfiguration;
