@@ -44,7 +44,7 @@ class ModuleManager {
             ArcLogger::trace("ModuleManager::run");
             while (true) {
                 for (auto module : _modules) {
-                    module->update(_gameObjects);
+                    module->update();
                 }
 
             }
@@ -74,15 +74,12 @@ class ModuleManager {
             return (nullptr);
         }
 
-        static std::map<std::string, std::pair<AModule *, bool>> availableModules;
-
         GlobalConfiguration _configuration;
         std::vector<AModule *> _modules;
         std::vector<GameObject *> _gameObjects;
 
-        friend class GameObject;
+        std::map<std::string, std::pair<AModule *, bool>> availableModules = {
+                {"physics", {new PhysicsModule(_gameObjects), false}},
+        };
 };
 
-std::map<std::string, std::pair<AModule *, bool>> ModuleManager::availableModules = {
-        {"physics", {new PhysicsModule(), false}},
-};

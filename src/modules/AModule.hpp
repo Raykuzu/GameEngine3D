@@ -10,7 +10,7 @@
 
 class AModule {
     public:
-        AModule() = default;
+        explicit AModule(std::vector<GameObject *> &gameObjects) : _gameObjects(gameObjects) {};
         virtual ~AModule() = default;
 
         bool operator==(const AModule &rhs) const {
@@ -49,9 +49,11 @@ class AModule {
 
         virtual void term() = 0;
 
-        virtual void update(std::vector<GameObject *> gameObject) = 0;
+        virtual void update() = 0;
 
     private:
         ModuleConfiguration _moduleConfiguration;
+
+        std::vector<GameObject *> &_gameObjects;
 };
 

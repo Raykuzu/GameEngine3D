@@ -8,7 +8,7 @@
 
 class PhysicsModule : public AModule {
     public:
-        PhysicsModule() = default;
+        explicit PhysicsModule(std::vector<GameObject *> &gameObjects) : AModule(gameObjects) {};
         ~PhysicsModule() override = default;
 
         void init() override {
@@ -19,7 +19,7 @@ class PhysicsModule : public AModule {
 
         }
 
-        void update(std::vector<GameObject *> gameObjects) override {
+        void update() override {
 
         }
 

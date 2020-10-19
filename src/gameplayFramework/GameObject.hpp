@@ -47,8 +47,6 @@ class GameObject {
             return _flags;
         }
 
-
-
     private:
 
         unsigned int _flags;
