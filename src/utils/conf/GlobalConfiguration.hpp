@@ -16,7 +16,7 @@ class GlobalConfiguration {
         }
 
         void addModule(ModuleConfiguration const &moduleConfiguration) {
-            _modules[moduleConfiguration.getName()] = moduleConfiguration;
+            _modules.insert(std::make_pair(moduleConfiguration.getName(), moduleConfiguration));
         }
 
         void removeModule(std::string const &name) {
