@@ -4,9 +4,9 @@
 #include <X11/Xatom.h>
 #include <iostream>
 #include <map>
-#include "../IWindow.hpp"
+#include "./IWindow.hpp"
 
-typedef std::map<unsigned int, KeyboardKey> winKeyMap;
+typedef std::map<unsigned int, WindowInput> unixInputMap;
 
 class UnixWindow : public IWindow {
     public:
@@ -34,16 +34,19 @@ class UnixWindow : public IWindow {
 
         void create(WindowSettings settings) override {
             settings.fullscreen ? createFullScreenWindow(settings) : createSizedWindow(settings);
+            _windowOpened = true;
         }
 
         WindowEvent getEvent() override {
             XNextEvent(_display, &_event);
-            const int eventTypes[] = { ClientMessage, KeyPress, KeyRelease, MotionNotify };
+            const int eventTypes[] = { ClientMessage, KeyPress, KeyRelease, MotionNotify, ButtonPress, ButtonRelease };
             WindowEvent (UnixWindow::*eventHandlers[])() = {
                 &UnixWindow::handleClientMessage,
                 &UnixWindow::handleKeyPress,
                 &UnixWindow::handleKeyRelease,
                 &UnixWindow::handleMotionNotify,
+                &UnixWindow::handleButtonPress,
+                &UnixWindow::handleButtonReleased,
                 nullptr
             };
 
@@ -68,7 +71,7 @@ class UnixWindow : public IWindow {
             unsigned long colors[] = { BlackPixel(_display, _screen), WhitePixel(_display, _screen) };
 
             _window = XCreateSimpleWindow(_display, parentWindow, 0, 0, 1, 1, settings.borderSize, colors[settings.borderColor], colors[settings.windowColor]);
-            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask);
+            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
             _deleteAtom = XInternAtom(_display, "WM_DELETE_WINDOW", False);
             XSetWMProtocols(_display, _window, &_deleteAtom, 1);
 
@@ -88,7 +91,6 @@ class UnixWindow : public IWindow {
             _yCoord = attributes.y;
             _width = attributes.width;
             _height = attributes.height;
-            _windowOpened = true;
         }
 
         void createSizedWindow(WindowSettings settings) {
@@ -96,7 +98,7 @@ class UnixWindow : public IWindow {
             unsigned long colors[] = { BlackPixel(_display, _screen), WhitePixel(_display, _screen) };
 
             _window = XCreateSimpleWindow(_display, parentWindow, settings.x, settings.y, settings.width, settings.height, settings.borderSize, colors[settings.borderColor], colors[settings.windowColor]);
-            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | PointerMotionMask);
+            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
             _deleteAtom = XInternAtom(_display, "WM_DELETE_WINDOW", False);
             XSetWMProtocols(_display, _window, &_deleteAtom, 1);
 
@@ -104,7 +106,6 @@ class UnixWindow : public IWindow {
             _yCoord = settings.y;
             _width = settings.width;
             _height = settings.height;
-            _windowOpened = true;
         }
 
         WindowEvent handleClientMessage() {
@@ -120,12 +121,43 @@ class UnixWindow : public IWindow {
             return windowEvent;
         }
 
+        WindowEvent handleButtonPress() {
+            WindowEvent windowEvent;
+
+            windowEvent.type = WE_INPUT;
+            unixInputMap::iterator it = _buttonMap.find(_event.xbutton.button);
+            windowEvent.input = (it != _buttonMap.end()) ? it->second : WI_UNKNOWN;
+
+            _currentlyPressedInput.push_back(windowEvent.input);
+
+            return windowEvent;
+        }
+
+        WindowEvent handleButtonReleased() {
+            WindowEvent windowEvent;
+
+            windowEvent.type = WE_INPUT;
+            unixInputMap::iterator it = _buttonMap.find(_event.xbutton.button);
+            windowEvent.input = (it != _buttonMap.end()) ? it->second : WI_UNKNOWN;
+
+            for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
+                if (*iIt == windowEvent.input) {
+                    _currentlyPressedInput.erase(iIt);
+                    break;
+                }
+            }
+
+            return windowEvent;
+        }
+
         WindowEvent handleKeyPress() {
             WindowEvent windowEvent;
 
-            windowEvent.type = WE_KEY_PRESSED;
-            winKeyMap::iterator it = _keyMap.find(_event.xkey.keycode);
-            windowEvent.key = (it != _keyMap.end()) ? it->second : KK_UNDEFINED;
+            windowEvent.type = WE_INPUT;
+            unixInputMap::iterator it = _keyMap.find(_event.xkey.keycode);
+            windowEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
+
+            _currentlyPressedInput.push_back(windowEvent.input);
 
             return windowEvent;
         }
@@ -133,9 +165,16 @@ class UnixWindow : public IWindow {
         WindowEvent handleKeyRelease() {
             WindowEvent windowEvent;
 
-            windowEvent.type = WE_KEY_RELEASED;
-            winKeyMap::iterator it = _keyMap.find(_event.xkey.keycode);
-            windowEvent.key = (it != _keyMap.end()) ? it->second : KK_UNDEFINED;
+            windowEvent.type = WE_INPUT;
+            unixInputMap::iterator it = _keyMap.find(_event.xkey.keycode);
+            windowEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
+
+            for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
+                if (*iIt == windowEvent.input) {
+                    _currentlyPressedInput.erase(iIt);
+                    break;
+                }
+            }
 
             return windowEvent;
         }
@@ -153,92 +192,100 @@ class UnixWindow : public IWindow {
         Display *_display;
         int _screen;
         Window _window;
-        bool _windowOpened = false;
         Atom _deleteAtom;
         XEvent _event;
-        winKeyMap _keyMap = {
-            {9, KK_ESCAPE},
-            {67, KK_F1},
-            {68, KK_F2},
-            {69, KK_F3},
-            {70, KK_F4},
-            {71, KK_F5},
-            {72, KK_F6},
-            {73, KK_F7},
-            {74, KK_F8},
-            {75, KK_F9},
-            {76, KK_F10},
-            {95, KK_F11},
-            {96, KK_F12},
-            {110, KK_UP_LEFT_ARROW},
-            {115, KK_FIN},
-            {118, KK_INSER},
-            {119, KK_SUPPR},
-            {49, KK_SQUARE},
-            {10, KK_1},
-            {11, KK_2},
-            {12, KK_3},
-            {13, KK_4},
-            {14, KK_5},
-            {15, KK_6},
-            {16, KK_7},
-            {17, KK_8},
-            {18, KK_9},
-            {19, KK_0},
-            {20, KK_PAR_CLOSE},
-            {21, KK_EQUAL},
-            {22, KK_BACKSPACE},
-            {23, KK_TAB},
-            {24, KK_A},
-            {25, KK_Z},
-            {26, KK_E},
-            {27, KK_R},
-            {28, KK_T},
-            {29, KK_Y},
-            {30, KK_U},
-            {31, KK_I},
-            {32, KK_O},
-            {33, KK_P},
-            {34, KK_CIRCUM},
-            {35, KK_DOLLARS},
-            {36, KK_RETURN},
-            {66, KK_CAPS_LOCK},
-            {38, KK_Q},
-            {39, KK_S},
-            {40, KK_D},
-            {41, KK_F},
-            {42, KK_G},
-            {43, KK_H},
-            {44, KK_J},
-            {45, KK_K},
-            {46, KK_L},
-            {47, KK_M},
-            {48, KK_PERCENT},
-            {51, KK_ASTERISK},
-            {50, KK_LEFT_SHIFT},
-            {94, KK_CHEVRON},
-            {52, KK_W},
-            {53, KK_X},
-            {54, KK_C},
-            {55, KK_V},
-            {56, KK_B},
-            {57, KK_N},
-            {58, KK_QUESTION_MARK},
-            {59, KK_DOT},
-            {60, KK_SLASH},
-            {61, KK_EXCLAMATION},
-            {62, KK_RIGHT_SHIFT},
-            {152, KK_FN},
-            {37, KK_LEFT_CTRL},
-            {64, KK_ALT},
-            {65, KK_SPACE},
-            {108, KK_ALT_GR},
-            {105, KK_RIGHT_CTRL},
-            {112, KK_PAGE_UP},
-            {117, KK_PAGE_DOWN},
-            {113, KK_LEFT},
-            {111, KK_UP},
-            {114, KK_RIGHT},
-            {116, KK_DOWN}
+        unixInputMap _buttonMap = {
+            {1, WI_M1},
+            {3, WI_M2},
+            {2, WI_M3},
+            {9, WI_M4},
+            {8, WI_M5},
+            {4, WI_SCROLL_UP},
+            {5, WI_SCROLL_DOWN}
+        };
+        unixInputMap _keyMap = {
+            {9, WI_ESCAPE},
+            {67, WI_F1},
+            {68, WI_F2},
+            {69, WI_F3},
+            {70, WI_F4},
+            {71, WI_F5},
+            {72, WI_F6},
+            {73, WI_F7},
+            {74, WI_F8},
+            {75, WI_F9},
+            {76, WI_F10},
+            {95, WI_F11},
+            {96, WI_F12},
+            {110, WI_UP_LEFT_ARROW},
+            {115, WI_FIN},
+            {118, WI_INSER},
+            {119, WI_SUPPR},
+            {49, WI_SQUARE},
+            {10, WI_1},
+            {11, WI_2},
+            {12, WI_3},
+            {13, WI_4},
+            {14, WI_5},
+            {15, WI_6},
+            {16, WI_7},
+            {17, WI_8},
+            {18, WI_9},
+            {19, WI_0},
+            {20, WI_PAR_CLOSE},
+            {21, WI_EQUAL},
+            {22, WI_BACKSPACE},
+            {23, WI_TAB},
+            {24, WI_A},
+            {25, WI_Z},
+            {26, WI_E},
+            {27, WI_R},
+            {28, WI_T},
+            {29, WI_Y},
+            {30, WI_U},
+            {31, WI_I},
+            {32, WI_O},
+            {33, WI_P},
+            {34, WI_CIRCUM},
+            {35, WI_DOLLARS},
+            {36, WI_RETURN},
+            {66, WI_CAPS_LOCK},
+            {38, WI_Q},
+            {39, WI_S},
+            {40, WI_D},
+            {41, WI_F},
+            {42, WI_G},
+            {43, WI_H},
+            {44, WI_J},
+            {45, WI_K},
+            {46, WI_L},
+            {47, WI_M},
+            {48, WI_PERCENT},
+            {51, WI_ASTERISK},
+            {50, WI_LEFT_SHIFT},
+            {94, WI_CHEVRON},
+            {52, WI_W},
+            {53, WI_X},
+            {54, WI_C},
+            {55, WI_V},
+            {56, WI_B},
+            {57, WI_N},
+            {58, WI_QUESTION_MARK},
+            {59, WI_DOT},
+            {60, WI_SLASH},
+            {61, WI_EXCLAMATION},
+            {62, WI_RIGHT_SHIFT},
+            {152, WI_FN},
+            {37, WI_LEFT_CTRL},
+            {64, WI_ALT},
+            {65, WI_SPACE},
+            {108, WI_ALT_GR},
+            {105, WI_RIGHT_CTRL},
+            {112, WI_PAGE_UP},
+            {117, WI_PAGE_DOWN},
+            {113, WI_LEFT},
+            {111, WI_UP},
+            {114, WI_RIGHT},
+            {116, WI_DOWN}
         };
 };
