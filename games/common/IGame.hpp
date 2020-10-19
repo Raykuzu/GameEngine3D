@@ -4,11 +4,17 @@
 
 #pragma once
 
+#include "GamePlayFramework.hpp"
+
 class IGame {
     public:
-    virtual void init() = 0;
+        virtual void init(GamePlayFramework gamePlayFramework) = 0;
 
-    virtual void term() = 0;
+        virtual void term(GamePlayFramework gamePlayFramework) = 0;
 
-    virtual void update() = 0;
+        virtual void update(GamePlayFramework gamePlayFramework) = 0;
 };
+
+extern "C" {
+    IGame *loadGame();
+}
