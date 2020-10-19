@@ -4,7 +4,7 @@
 #include <X11/Xatom.h>
 #include <iostream>
 #include <map>
-#include "./IWindow.hpp"
+#include "../IWindow.hpp"
 
 typedef std::map<unsigned int, WindowInput> unixInputMap;
 
