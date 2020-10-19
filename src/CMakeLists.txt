@@ -9,3 +9,7 @@ add_executable(game-engine-3D
         ${GAMEPLAY_FRAMEWORK}
         ${MODULES}
         main.cpp)
+
+if (${UNIX})
+    target_link_libraries(game-engine-3D dl)
+endif()
