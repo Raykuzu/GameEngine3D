@@ -1,0 +1,1 @@
+g++ -shared -fPIC conf/Configuration.cpp -I ./src/utils/conf/ -W -Wall -Wextra -o conf/conf.so
