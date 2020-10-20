@@ -6,7 +6,7 @@
 
 #include <vector>
 #include <algorithm>
-#include <mm_malloc.h>
+#include <future>
 #include "ArcLogger.hpp"
 #include "GlobalConfiguration.hpp"
 #include "PhysicsModule.hpp"
@@ -15,10 +15,17 @@ class ModuleManager {
     public:
         ModuleManager() = default;
         ~ModuleManager() {
-            for (auto const &availableMod : availableModules) {
+            destroy();
+        };
+        void destroy() {
+            for (auto &availableMod : availableModules) {
+                availableMod.second.second = false;
                 delete availableMod.second.first;
             }
-        };
+            for (auto const &gameObject : _gameObjects) {
+                delete gameObject;
+            }
+        }
 
         void configure(GlobalConfiguration const &configuration) {
             ArcLogger::trace("ModuleManager::configure");
@@ -41,9 +48,9 @@ class ModuleManager {
             std::sort(_modules.begin(), _modules.end());
         }
 
-        [[noreturn]] void run() { // temporary infinite
+        void run(std::future<void> futureExit) {
             ArcLogger::trace("ModuleManager::run");
-            while (true) {
+            while (futureExit.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
                 for (auto module : _modules) {
                     module->update();
                 }
