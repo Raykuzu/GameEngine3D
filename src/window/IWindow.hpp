@@ -130,7 +130,8 @@ enum WindowColor {
 
 enum WindowEventType {
     WE_EXIT,
-    WE_INPUT,
+    WE_INPUT_PRESSED,
+    WE_INPUT_RELEASED,
     WE_POINTER_MOTION,
     WE_UNKNOWN,
 };
@@ -145,6 +146,7 @@ struct WindowEvent {
 struct WindowSettings {
     int x = 0;
     int y = 0;
+    std::string title = "window";
     unsigned int width = DEFAULT_WINDOW_WIDTH;
     unsigned int height = DEFAULT_WINDOW_HEIGHT;
     bool fullscreen = false;

@@ -124,7 +124,7 @@ class UnixWindow : public IWindow {
         WindowEvent handleButtonPress() {
             WindowEvent windowEvent;
 
-            windowEvent.type = WE_INPUT;
+            windowEvent.type = WE_INPUT_PRESSED;
             unixInputMap::iterator it = _buttonMap.find(_event.xbutton.button);
             windowEvent.input = (it != _buttonMap.end()) ? it->second : WI_UNKNOWN;
 
@@ -136,7 +136,7 @@ class UnixWindow : public IWindow {
         WindowEvent handleButtonReleased() {
             WindowEvent windowEvent;
 
-            windowEvent.type = WE_INPUT;
+            windowEvent.type = WE_INPUT_RELEASED;
             unixInputMap::iterator it = _buttonMap.find(_event.xbutton.button);
             windowEvent.input = (it != _buttonMap.end()) ? it->second : WI_UNKNOWN;
 
@@ -153,7 +153,7 @@ class UnixWindow : public IWindow {
         WindowEvent handleKeyPress() {
             WindowEvent windowEvent;
 
-            windowEvent.type = WE_INPUT;
+            windowEvent.type = WE_INPUT_PRESSED;
             unixInputMap::iterator it = _keyMap.find(_event.xkey.keycode);
             windowEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
 
@@ -165,7 +165,7 @@ class UnixWindow : public IWindow {
         WindowEvent handleKeyRelease() {
             WindowEvent windowEvent;
 
-            windowEvent.type = WE_INPUT;
+            windowEvent.type = WE_INPUT_RELEASED;
             unixInputMap::iterator it = _keyMap.find(_event.xkey.keycode);
             windowEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
 
