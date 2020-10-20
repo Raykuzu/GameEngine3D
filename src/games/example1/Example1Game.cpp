@@ -2,22 +2,22 @@
 // Created by raykuzu on 19/10/2020.
 //
 
-#include "IGame.hpp"
+#include "AGame.hpp"
 
-class Example1Game : public IGame {
+class Example1Game : public AGame {
     public:
-        Example1Game() = default;
-        ~Example1Game() = default;
+        explicit Example1Game(GamePlayFramework &gamePlayFramework) : AGame(gamePlayFramework) {};
+        ~Example1Game() override = default;
 
-        virtual void init(GamePlayFramework gamePlayFramework) {
-
-        }
-
-        virtual void term(GamePlayFramework gamePlayFramework) {
+        void init() override {
 
         }
 
-        virtual void update(GamePlayFramework gamePlayFramework) {
+        void term() override {
+
+        }
+
+        void update() override {
 
         }
     private:
@@ -25,11 +25,11 @@ class Example1Game : public IGame {
 };
 
 extern "C" {
-    Example1Game *loadGame() {
-        return (new Example1Game());
+    AGame *loadGame(GamePlayFramework &gamePlayFramework) {
+        return (new Example1Game(gamePlayFramework));
     }
 
-    void unloadGame(Example1Game *example1Game) {
-        delete example1Game;
+    void unloadGame(AGame *game) {
+        delete game;
     }
 }

@@ -6,11 +6,10 @@
 
 #include "GamePlayFramework.hpp"
 
-class IGame {
+class AGame {
     public:
-        explicit IGame(GamePlayFramework &gamePlayFramework) : _gamePlayFramework(gamePlayFramework) {};
-
-        virtual ~IGame() = default;
+        explicit AGame(GamePlayFramework &gamePlayFramework) : _gamePlayFramework(gamePlayFramework) {};
+        virtual ~AGame() = default;
 
         virtual void init() = 0;
 
@@ -19,11 +18,11 @@ class IGame {
         virtual void update() = 0;
 
     private:
-        GamePlayFramework _gamePlayFramework;
+        GamePlayFramework &_gamePlayFramework;
 };
 
 extern "C" {
-    IGame *loadGame();
+    AGame *loadGame(GamePlayFramework &gamePlayFramework);
 
-    void unloadGame(IGame *game);
+    void unloadGame(AGame *game);
 }
