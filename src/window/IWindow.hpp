@@ -179,5 +179,6 @@ class IWindow {
         unsigned int _width = DEFAULT_WINDOW_WIDTH;
         unsigned int _height = DEFAULT_WINDOW_HEIGHT;
         bool _windowOpened = false;
+        bool _fullScreen = false;
         inputList _currentlyPressedInput;
 };

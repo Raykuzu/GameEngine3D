@@ -91,6 +91,7 @@ class UnixWindow : public IWindow {
             _yCoord = attributes.y;
             _width = attributes.width;
             _height = attributes.height;
+            _fullScreen = true;
         }
 
         void createSizedWindow(WindowSettings settings) {
