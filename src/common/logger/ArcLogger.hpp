@@ -39,6 +39,8 @@ class ArcLogger {
         static void debug(std::string const &);
         static void trace(std::string const &);
 
+        static void vanilla(std::string const &);
+
         /* CONF GETTERS & SETTERS */
 
         static void setBinaryName(std::string const &);

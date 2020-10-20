@@ -63,6 +63,16 @@ void ArcLogger::trace(std::string const &str)
     ArcLogger::log(str, ArcLogger::TRACE);
 }
 
+void ArcLogger::vanilla(std::string const &str) {
+    _logMutex.lock();
+    if (!_fileRedirection)
+        std::cout << str << std::endl;
+    else {
+        _ofs << str << std::endl;
+    }
+    _logMutex.unlock();
+};
+
 /* CONF GETTERS & SETTERS */
 
 void ArcLogger::setBinaryName(std::string const &binName)
