@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <mm_malloc.h>
 #include "ArcLogger.hpp"
 #include "GlobalConfiguration.hpp"
 #include "PhysicsModule.hpp"
@@ -71,7 +72,7 @@ class ModuleManager {
                     return (module);
                 }
             }
-            return (nullptr);
+            throw std::runtime_error("Module [" + name + "] doesn't exist");
         }
 
         GlobalConfiguration _configuration;

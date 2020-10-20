@@ -1,6 +1,5 @@
-list(APPEND CONF
-        ${CMAKE_CURRENT_LIST_DIR}/ConfParser.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/ConfLoader.hpp
+list(APPEND COMMON_CONF
+        ${CMAKE_CURRENT_LIST_DIR}/IConfiguration.hpp
         ${CMAKE_CURRENT_LIST_DIR}/ModuleConfiguration.hpp
         ${CMAKE_CURRENT_LIST_DIR}/GlobalConfiguration.hpp)
 

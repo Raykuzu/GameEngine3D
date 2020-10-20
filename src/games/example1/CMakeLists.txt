@@ -1,0 +1,2 @@
+list(APPEND EXAMPLE1-GAME
+        ${CMAKE_CURRENT_LIST_DIR}/Example1Game.cpp)
