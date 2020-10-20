@@ -93,6 +93,7 @@ enum WindowInput {
     WI_UP,
     WI_RIGHT,
     WI_DOWN,
+    WI_PAD_VER_NUM,
     WI_PAD_SLASH,
     WI_PAD_ASTERISK,
     WI_PAD_MINUS,
