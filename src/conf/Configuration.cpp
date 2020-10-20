@@ -7,21 +7,25 @@
 class Configuration : public IConfiguration {
 
     public:
-        Configuration() = default;
+        Configuration() {
+            _conf.addModule(ModuleConfiguration("physics", 1, {}));
+
+        };
         ~Configuration() override = default;
 
-        GlobalConfiguration *getConfiguration() override {
-            GlobalConfiguration *configuration = new GlobalConfiguration();
-
-            configuration->addModule(ModuleConfiguration("physics", 1, {}));
-
-            return (configuration);
+        [[nodiscard]] GlobalConfiguration const &getConfiguration() override {
+            return (_conf);
         }
+    private:
+        GlobalConfiguration _conf;
 };
 
 extern "C" {
-    GlobalConfiguration *getConfiguration() {
-        Configuration configuration;
-        return (configuration.getConfiguration());
+    IConfiguration *loadConf() {
+        return (new Configuration());
+    }
+
+    void unloadConf(IConfiguration *configuration) {
+        delete configuration;
     }
 }

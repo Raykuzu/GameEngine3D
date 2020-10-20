@@ -10,9 +10,11 @@ class IConfiguration {
     public:
         virtual ~IConfiguration() = default;
 
-        virtual GlobalConfiguration *getConfiguration() = 0;
+        virtual GlobalConfiguration const &getConfiguration() = 0;
 };
 
 extern "C" {
-    GlobalConfiguration *getConfiguration();
+    IConfiguration *loadConf();
+
+    void unloadConf(IConfiguration *configuration);
 }
