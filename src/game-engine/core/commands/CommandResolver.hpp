@@ -44,5 +44,7 @@ class CommandResolver{
 };
 
 std::map<std::string, std::pair<CommandType, size_t>> CommandResolver::commandsMap = {
-        {"load", {CommandType::LOAD, 1}}
+        {"HELP", {CommandType::HELP, 0}},
+        {"LOAD_GAME", {CommandType::LOAD_GAME, 1}},
+        {"LOAD_CONF", {CommandType::LOAD_CONF, 1}}
 };

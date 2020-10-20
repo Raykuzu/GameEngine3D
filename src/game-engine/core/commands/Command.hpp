@@ -9,7 +9,9 @@
 
 enum CommandType {
     NONE,
-    LOAD
+    HELP,
+    LOAD_GAME,
+    LOAD_CONF
 };
 
 class Command {
