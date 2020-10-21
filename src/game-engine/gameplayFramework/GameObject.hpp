@@ -47,6 +47,14 @@ class GameObject {
             return _flags;
         }
 
+        component_p getComponent(Component type) {
+            for (auto component : _components) {
+                if (component->_type == type)
+                    return (component);
+            }
+            return (nullptr);
+        }
+
     private:
 
         unsigned int _flags;
