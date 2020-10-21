@@ -12,16 +12,16 @@ class PhysicsModule : public AModule {
         ~PhysicsModule() override = default;
 
         void init() override {
-
+            ArcLogger::debug("PhysicsModule::init");
         }
 
         void term() override {
-
+            ArcLogger::debug("PhysicsModule::term");
         }
 
         void update() override {
-
+            ArcLogger::debug("PhysicsModule::update");
         }
 
-private:
+    private:
 };
