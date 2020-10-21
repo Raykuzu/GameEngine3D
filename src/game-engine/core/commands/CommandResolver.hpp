@@ -28,9 +28,9 @@ class CommandResolver{
                 ArcLogger::warn("Unknown command: " + words.at(0));
                 return (command); // same
             } else {
-                if (words.size() - 1 != commandsMap.at(words.at(0)).second) {
+                if (commandsMap.at(words.at(0)).second != -1 && words.size() - 1 != (size_t)commandsMap.at(words.at(0)).second) {
                     ArcLogger::warn("Number of parameters mismatch for the command: " + words.at(0));
-                    return (command);
+                    return (command); // same
                 }
                 command.setType(commandsMap.at(words.at(0)).first);
                 for (size_t i = 1; i < words.size(); i++) {
@@ -40,11 +40,12 @@ class CommandResolver{
             return (command);
         }
     private:
-        static std::map<std::string, std::pair<CommandType, size_t>> commandsMap;
+        static std::map<std::string, std::pair<CommandType, ssize_t>> commandsMap;
 };
 
-std::map<std::string, std::pair<CommandType, size_t>> CommandResolver::commandsMap = {
+std::map<std::string, std::pair<CommandType, ssize_t>> CommandResolver::commandsMap = {
         {"HELP", {CommandType::HELP, 0}},
+        {"BASH", {CommandType::BASH, -1}},
         {"LOAD_GAME", {CommandType::LOAD_GAME, 1}},
         {"LOAD_CONF", {CommandType::LOAD_CONF, 1}}
 };

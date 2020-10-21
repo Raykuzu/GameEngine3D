@@ -10,6 +10,7 @@
 enum CommandType {
     NONE,
     HELP,
+    BASH,
     LOAD_GAME,
     LOAD_CONF
 };
