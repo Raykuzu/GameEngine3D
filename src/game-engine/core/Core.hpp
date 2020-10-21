@@ -10,102 +10,121 @@
 #include "IConfiguration.hpp"
 #include "AGame.hpp"
 #include "ThreadHandler.hpp"
+#include "BashCommand.hpp"
 
 class Core {
     public:
         Core() : _gamePlayFramework(_moduleManager) {};
         ~Core() = default;
-        void run() {
-            loadConfiguration();
-            runShell();
-        }
 
-    private:
-        void loadConfiguration() {
-            if (_confLoader.load("./libconfiguration.so") == -1) {
-                throw std::runtime_error("Can't load configuration");
+        /* Config */
+
+        bool loadConf(std::string const &path) {
+            ArcLogger::trace("Core::loadConf");
+            if (_confLoader.load(path) == -1) {
+                return (false);
             }
-            _conf = ((IConfiguration * (*)())_confLoader.getFunction("loadConf"))();
-
-            _moduleManager.configure(_conf->getConfiguration());
-            ArcLogger::info(_conf->getConfiguration().getModules().at("physics").getName());
-        }
-
-        void runShell() {
-            ArcLogger::vanilla("Core loaded .....");
-            ArcLogger::vanilla("Shell running, for information type HELP.");
-            ArcLogger::vanilla("-----------------------------------------");
-            std::string line;
-            Command command;
-
-            while (std::getline(std::cin, line)) {
-                command = CommandResolver::resolve(line);
-                switch (command.getType()) {
-                    case NONE:
-                        break;
-                    case HELP:
-                        printHelp();
-                        break;
-                    case LOAD_GAME:
-                        unloadGame();
-                        loadGame(command.getValues().at(0));
-                        teardownModuleManager();
-                        _game->init();
-                        configureAndRunModuleManager();
-                        break;
-                    case LOAD_CONF:
-                        unloadConf();
-                        loadConf(command.getValues().at(0));
-                        teardownModuleManager();
-                        configureAndRunModuleManager();
-                        break;
-                }
-            }
-        }
-
-        void configureAndRunModuleManager() {
-            _moduleManager.configure(_conf->getConfiguration());
-            _moduleManagerTHandler.start(&ModuleManager::run, _moduleManager);
-        }
-
-        void teardownModuleManager() {
-            _moduleManagerTHandler.stop();
-            _moduleManager.destroy();
-        }
-
-        void loadGame(std::string const &path) {
-            if (_gameLoader.load(path)) {
-                ArcLogger::error("Can't load game at path [" + path + "]");
-                return;
-            }
-            _game = ((AGame * (*)(GamePlayFramework &gamePlayFramework))_gameLoader.getFunction("loadGame"))(_gamePlayFramework);
-        }
-
-        void unloadGame() {
-            if (_gameLoader.somethingLoaded()) {
-                _game->term();
-                ((void (*)(AGame *))_gameLoader.getFunction("unloadGame"))(_game);
-                _gameLoader.unload();
-            }
-        }
-
-        void loadConf(std::string const &path) {
-            if (_confLoader.load(path)) {
-                ArcLogger::error("Can't load conf at path [" + path + "]");
-                return;
-            }
-            _conf = ((IConfiguration * (*)())_confLoader.getFunction("loadConf"))();
+            _configured = true;
+            return (checkAndExecute("loadConf"));
         }
 
         void unloadConf() {
+            ArcLogger::trace("Core::unloadConf");
             if (_confLoader.somethingLoaded()) {
-                ((void (*)(IConfiguration *))_confLoader.getFunction("unloadConf"))(_conf);
+                checkAndExecute("unloadConf");
                 _confLoader.unload();
             }
         }
 
-        static void printHelp() {
-            ArcLogger::vanilla("Hello it's the help //TODO");
+        void configure() {
+            ArcLogger::trace("Core::configure");
+            /*if (_moduleManagerTHandler.started()) {
+                _moduleManagerTHandler.stop();
+            }
+            _moduleManager.destroyGameObjects();
+            _moduleManager.destroyModules();*/
+            _configured = true;
+            _moduleManager.configure(_conf->getConfiguration());
+        }
+
+        bool hasConf() {
+            ArcLogger::trace("Core::hasConf");
+            return (_conf != nullptr);
+        }
+
+        /* Game */
+
+        bool loadGame(std::string const &path) {
+            ArcLogger::trace("Core::loadGame");
+            if (_gameLoader.load(path) == -1) {
+                return (false);
+            }
+            return (checkAndExecute("loadGame"));
+        }
+
+        void unloadGame() {
+            ArcLogger::trace("Core::unloadGame");
+            if (_gameLoader.somethingLoaded()) {
+                termGame();
+                checkAndExecute("unloadGame");
+                _gameLoader.unload();
+            }
+        }
+
+        void initGame() {
+            ArcLogger::trace("Core::initGame");
+            _game->init();
+        }
+
+        void termGame() {
+            ArcLogger::trace("Core::termGame");
+            _game->term();
+        }
+
+        /* Module Manager */
+
+        void launchModuleManager() {
+            ArcLogger::trace("Core::launchModuleManager");
+            if (_moduleManagerTHandler.started()) {
+                return;
+            }
+            if (!_configured) {
+                ArcLogger::error("Please configure before launch a game");
+                return;
+            }
+            _moduleManagerTHandler.start(&ModuleManager::run, _moduleManager);
+        }
+
+        void teardownModuleManager() {
+            ArcLogger::trace("Core::teardownModuleManager");
+            if (_moduleManagerTHandler.started()) {
+                _moduleManagerTHandler.stop();
+            }
+        }
+
+    private:
+        bool checkAndExecute(std::string const &funcName) {
+            void *func = nullptr;
+
+            if (funcName == "loadConf" || funcName == "unloadConf") {
+                func = _confLoader.getFunction(funcName);
+            } else {
+                func = _gameLoader.getFunction(funcName);
+            }
+            if (func == nullptr) {
+                ArcLogger::error("Function [" + funcName + "] doesn't exist");
+                return (false);
+            }
+            if (funcName == "loadConf") {
+                _conf = ((IConfiguration * (*)()) func)();
+            } else if (funcName == "unloadConf") {
+                ((void(*)(IConfiguration *)) func)(_conf);
+            } else if (funcName == "loadGame") {
+                _game = ((AGame * (*)(GamePlayFramework &)) func)(_gamePlayFramework);
+            } else if (funcName == "unloadGame") {
+                ((void(*)(AGame *)) func)(_game);
+            }
+            return (true);
         }
 
         ModuleManager _moduleManager;
@@ -114,6 +133,8 @@ class Core {
         GamePlayFramework _gamePlayFramework;
 
         AGame *_game = nullptr;
+
+        bool _configured = false;
         IConfiguration *_conf = nullptr;
 
         LibLoader _confLoader;
