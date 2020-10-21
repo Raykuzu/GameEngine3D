@@ -54,7 +54,6 @@ class AModule {
     protected:
         std::vector<GameObject *> &_gameObjects;
 
-    private:
         ModuleConfiguration _moduleConfiguration;
 };
 
