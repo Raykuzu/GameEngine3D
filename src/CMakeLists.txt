@@ -7,12 +7,12 @@ add_executable(game-engine-3D
         ${COMMON}
         ${GAME-ENGINE})
 
-add_library(configuration SHARED
+add_library(conf SHARED
         ${COMMON_LOGGER}
         ${COMMON_CONF}
         ${CONF})
 
-add_library(example1-game SHARED
+add_library(game-example1 SHARED
         ${COMMON_LOGGER}
         ${COMMON_GAMES}
         ${EXAMPLE1-GAME})
