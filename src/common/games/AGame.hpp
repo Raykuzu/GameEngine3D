@@ -17,7 +17,7 @@ class AGame {
 
         virtual void update() = 0;
 
-    private:
+    protected:
         GamePlayFramework &_gamePlayFramework;
 };
 
