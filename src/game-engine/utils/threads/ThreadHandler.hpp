@@ -7,6 +7,7 @@
 #include <thread>
 #include <future>
 #include <condition_variable>
+#include "ArcLogger.hpp"
 
 class ThreadHandler {
     public:
@@ -25,12 +26,23 @@ class ThreadHandler {
             _futureStopThread = _promiseStopThread->get_future();
             _thread = std::thread(callable, object, std::move(_futureStopThread));
         }
+        bool started() {
+            return (_promiseStopThread != nullptr);
+        }
         void stop() {
+            if (_promiseStopThread == nullptr) {
+                ArcLogger::warn("Please start to threadHandler before stopping it");
+                return;
+            }
             _promiseStopThread->set_value();
             _thread.join();
             delete _promiseStopThread;
         }
         void stop(std::condition_variable &cond) {
+            if (_promiseStopThread == nullptr) {
+                ArcLogger::warn("Please start to threadHandler before stopping it");
+                return;
+            }
             _promiseStopThread->set_value();
             cond.notify_one();
             _thread.join();
