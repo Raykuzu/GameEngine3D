@@ -33,8 +33,48 @@ class UnixWindow : public IWindow {
         }
 
         void create(WindowSettings settings) override {
-            settings.fullscreen ? createFullScreenWindow(settings) : createSizedWindow(settings);
+            const Window parentWindow = RootWindow(_display, _screen);
+            unsigned long colors[] = { BlackPixel(_display, _screen), WhitePixel(_display, _screen) };
+
+            _window = XCreateSimpleWindow(_display, parentWindow, settings.x, settings.y, settings.width, settings.height, settings.borderSize, colors[settings.borderColor], colors[settings.windowColor]);
+            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+            _deleteAtom = XInternAtom(_display, "WM_DELETE_WINDOW", False);
+            XSetWMProtocols(_display, _window, &_deleteAtom, 1);
+
+            if (settings.fullscreen) {
+                setFullScreen();
+            } else {
+                setWindowSizePos(settings.x, settings.y, settings.width, settings.height);
+            }
             _windowOpened = true;
+        }
+
+        void setFullScreen() override {
+            Atom wm_state   = XInternAtom (_display, "_NET_WM_STATE", true );
+            Atom wm_fullscreen = XInternAtom (_display, "_NET_WM_STATE_FULLSCREEN", true );
+
+            XChangeProperty(_display, _window, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
+
+            XWindowAttributes attributes;
+
+            XGetWindowAttributes(_display, _window, &attributes);
+            Window root = attributes.root;
+            XGetWindowAttributes(_display, root, &attributes);
+
+            _xCoord = attributes.x;
+            _yCoord = attributes.y;
+            _width = attributes.width;
+            _height = attributes.height;
+            _fullScreen = true;
+        }
+
+        void setWindowSizePos(int x, int y, unsigned int width, unsigned int height) override {
+            XMoveResizeWindow(_display, _window, x, y, width, height);
+            _xCoord = x;
+            _yCoord = y;
+            _width = width;
+            _height = height;
+            _fullScreen = false;
         }
 
         WindowEvent getEvent() override {
@@ -65,50 +105,6 @@ class UnixWindow : public IWindow {
         }
 
     private:
-
-        void createFullScreenWindow(WindowSettings settings) {
-            const Window parentWindow = RootWindow(_display, _screen);
-            unsigned long colors[] = { BlackPixel(_display, _screen), WhitePixel(_display, _screen) };
-
-            _window = XCreateSimpleWindow(_display, parentWindow, 0, 0, 1, 1, settings.borderSize, colors[settings.borderColor], colors[settings.windowColor]);
-            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
-            _deleteAtom = XInternAtom(_display, "WM_DELETE_WINDOW", False);
-            XSetWMProtocols(_display, _window, &_deleteAtom, 1);
-
-
-            Atom wm_state   = XInternAtom (_display, "_NET_WM_STATE", true );
-            Atom wm_fullscreen = XInternAtom (_display, "_NET_WM_STATE_FULLSCREEN", true );
-
-            XChangeProperty(_display, _window, wm_state, XA_ATOM, 32, PropModeReplace, (unsigned char *)&wm_fullscreen, 1);
-
-            XWindowAttributes attributes;
-
-            XGetWindowAttributes(_display, _window, &attributes);
-            Window root = attributes.root;
-            XGetWindowAttributes(_display, root, &attributes);
-
-            _xCoord = attributes.x;
-            _yCoord = attributes.y;
-            _width = attributes.width;
-            _height = attributes.height;
-            _fullScreen = true;
-        }
-
-        void createSizedWindow(WindowSettings settings) {
-            const Window parentWindow = RootWindow(_display, _screen);
-            unsigned long colors[] = { BlackPixel(_display, _screen), WhitePixel(_display, _screen) };
-
-            _window = XCreateSimpleWindow(_display, parentWindow, settings.x, settings.y, settings.width, settings.height, settings.borderSize, colors[settings.borderColor], colors[settings.windowColor]);
-            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
-            _deleteAtom = XInternAtom(_display, "WM_DELETE_WINDOW", False);
-            XSetWMProtocols(_display, _window, &_deleteAtom, 1);
-
-            _xCoord = settings.x;
-            _yCoord = settings.y;
-            _width = settings.width;
-            _height = settings.height;
-        }
-
         WindowEvent handleClientMessage() {
             WindowEvent windowEvent;
 
@@ -152,6 +148,7 @@ class UnixWindow : public IWindow {
         }
 
         WindowEvent handleKeyPress() {
+            _fullScreen ? setWindowSizePos(DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT) : setFullScreen();
             WindowEvent windowEvent;
 
             windowEvent.type = WE_INPUT_PRESSED;

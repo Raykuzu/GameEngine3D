@@ -167,6 +167,8 @@ class IWindow {
         virtual void expose() = 0;
         virtual WindowEvent getEvent() = 0;
         virtual void closeWindow() = 0;
+        virtual void setFullScreen() = 0;
+        virtual void setWindowSizePos(int x, int y, unsigned int width, unsigned int height) = 0;
         bool isOpened() const {
             return _windowOpened;
         };
