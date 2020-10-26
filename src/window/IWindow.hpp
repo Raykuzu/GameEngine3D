@@ -147,7 +147,6 @@ struct WindowEvent {
 struct WindowSettings {
     int x = 0;
     int y = 0;
-    std::string title = "window";
     unsigned int width = DEFAULT_WINDOW_WIDTH;
     unsigned int height = DEFAULT_WINDOW_HEIGHT;
     bool fullscreen = false;
@@ -159,29 +158,29 @@ struct WindowSettings {
 typedef std::vector<WindowInput> inputList;
 
 class IWindow {
-    public:
-        IWindow() = default;
-        virtual ~IWindow() = default;
+public:
+    IWindow() = default;
+    virtual ~IWindow() = default;
 
-        virtual void create(WindowSettings settings) = 0;
-        virtual void expose() = 0;
-        virtual WindowEvent getEvent() = 0;
-        virtual void closeWindow() = 0;
-        virtual void setFullScreen() = 0;
-        virtual void setWindowSizePos(int x, int y, unsigned int width, unsigned int height) = 0;
-        bool isOpened() const {
-            return _windowOpened;
-        };
-        inputList getCurrentlyPressedInput() const {
-            return _currentlyPressedInput;
-        };
+    virtual void create(WindowSettings settings) = 0;
+    virtual void expose() = 0;
+    virtual WindowEvent getEvent() = 0;
+    virtual void closeWindow() = 0;
+    virtual void setFullScreen() = 0;
+    virtual void setWindowSizePos(int x, int y, unsigned int width, unsigned int height) = 0;
+    bool isOpened() const {
+        return _windowOpened;
+    };
+    inputList getCurrentlyPressedInput() const {
+        return _currentlyPressedInput;
+    };
 
-    protected:
-        int _xCoord = DEFAULT_WINDOW_X;
-        int _yCoord = DEFAULT_WINDOW_Y;
-        unsigned int _width = DEFAULT_WINDOW_WIDTH;
-        unsigned int _height = DEFAULT_WINDOW_HEIGHT;
-        bool _windowOpened = false;
-        bool _fullScreen = false;
-        inputList _currentlyPressedInput;
+protected:
+    int _xCoord = DEFAULT_WINDOW_X;
+    int _yCoord = DEFAULT_WINDOW_Y;
+    unsigned int _width = DEFAULT_WINDOW_WIDTH;
+    unsigned int _height = DEFAULT_WINDOW_HEIGHT;
+    bool _windowOpened = false;
+    bool _fullScreen = false;
+    inputList _currentlyPressedInput;
 };
