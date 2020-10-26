@@ -20,4 +20,5 @@ add_library(game-example1 SHARED
 if (${UNIX})
     target_link_libraries(game-engine-3D dl)
     target_link_libraries(game-engine-3D pthread)
+    target_link_libraries(game-engine-3D -lX11)
 endif()
