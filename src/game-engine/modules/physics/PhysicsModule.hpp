@@ -58,18 +58,18 @@ class PhysicsModule : public AModule {
             // std::cout << 
             transform._position = transform._position + (transform._velocity * delta);
         }
+
         void init() override {
-            ArcLogger::trace("PhysicsModule::Init");
+            ArcLogger::trace("PhysicsModule::init");
         }
 
         void term() override {
-            ArcLogger::trace("PhysicsModule::Terminate");
-
+            ArcLogger::trace("PhysicsModule::term");
         }
 
         void update() override {
-
+            ArcLogger::trace("PhysicsModule::update");
         }
 
-private:
+    private:
 };

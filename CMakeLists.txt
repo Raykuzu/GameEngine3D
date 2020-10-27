@@ -6,7 +6,7 @@ set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_BINARY_DIR ${PROJECT_SOURCE_DIR}/build)
 
 if (${UNIX})
-    set(CMAKE_CXX_FLAGS "-W -Wall -Wextra -std=c++17")
+    set(CMAKE_CXX_FLAGS "-W -Wall -Wextra -std=c++17 -g3")
 endif()
 if (${WIN32})
     add_definitions(/D _CRT_SECURE_NO_WARNINGS)

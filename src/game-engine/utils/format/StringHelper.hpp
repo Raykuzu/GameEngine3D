@@ -25,6 +25,7 @@ class StringHelper {
             splited.push_back(base.substr(last));
             return (splited);
         };
+
         static std::vector<std::string> split(std::string const &base, char const sep) {
             std::vector<std::string> splited;
             std::stringstream ss(base);
@@ -32,6 +33,27 @@ class StringHelper {
             for (std::string token; std::getline(ss, token, sep); splited.push_back(token));
             return (splited);
         };
+
+        static std::string merge(std::vector<std::string> const &base, std::string const &sep) {
+            std::string merged;
+
+            for (auto const &word : base) {
+                merged += word;
+                merged += sep;
+            }
+            return (merged);
+        }
+
+        static std::string merge(std::vector<std::string> const &base, char const sep) {
+            std::string merged;
+
+            for (auto const &word : base) {
+                merged += word;
+                merged += sep;
+            }
+            return (merged);
+        }
+
         static void trim(std::string &base) {
             std::replace(base.begin(), base.end(), '\t', ' ');
             for (size_t i = 0; i < base.size() - 1; i++) {
@@ -41,6 +63,7 @@ class StringHelper {
                 }
             }
         };
+
         static void reduct(std::string &base) {
             for (size_t i = 0; i < base.size(); i++) {
                 if (base.at(i) == ' ' || base.at(i) == '\t') {

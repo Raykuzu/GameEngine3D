@@ -8,4 +8,5 @@ list(APPEND GAME-ENGINE
         ${UTILS}
         ${GAMEPLAY_FRAMEWORK}
         ${MODULES}
+        ${CORE}
         ${CMAKE_CURRENT_LIST_DIR}/main.cpp)

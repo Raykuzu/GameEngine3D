@@ -6,6 +6,8 @@
 
 #include "GlobalConfiguration.hpp"
 
+#define DEFAULT_CONFIGURATION_PATH "./libconf.so"
+
 class IConfiguration {
     public:
         virtual ~IConfiguration() = default;

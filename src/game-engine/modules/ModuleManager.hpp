@@ -15,13 +15,18 @@ class ModuleManager {
     public:
         ModuleManager() = default;
         ~ModuleManager() {
-            destroy();
+            destroyGameObjects();
+            destroyModules();
         };
-        void destroy() {
+
+        void destroyModules() {
             for (auto &availableMod : availableModules) {
                 availableMod.second.second = false;
                 delete availableMod.second.first;
             }
+        }
+
+        void destroyGameObjects() {
             for (auto const &gameObject : _gameObjects) {
                 delete gameObject;
             }
@@ -43,6 +48,7 @@ class ModuleManager {
                     } else {
                         modulePair.first->configure(conf.second);
                         _modules.push_back(modulePair.first);
+                        ArcLogger::debug("Module [" + conf.first + "] registered and configured");
                     }
                 }
             std::sort(_modules.begin(), _modules.end());
