@@ -54,9 +54,10 @@ class PhysicsModule : public AModule {
             ArcLogger::debug("PHYSICS MODULE: OBJ: transform, position: " + obj._position.getDisplayInfo() + ", velocity: " + obj._velocity.getDisplayInfo() + ", acceleration: " + obj._acceleration.getDisplayInfo());
         }
 
-        void integrate(const transform_t transform, float delta) {
+        void integrate(transform_t transform, float delta) {
             // std::cout << 
-            transform._position = transform._position + (transform._velocity * delta);
+            ArcLogger::debug("PHYSICS MODULE: OBJ: TMP transform, position:" + (transform._position + transform._velocity * delta).getDisplayInfo());
+            transform._position = (transform._position + (transform._velocity * delta));
         }
 
         void init() override {
