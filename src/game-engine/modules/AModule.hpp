@@ -10,7 +10,7 @@
 
 class AModule {
     public:
-        explicit AModule(std::vector<GameObject *> &gameObjects) : _gameObjects(gameObjects) {};
+        explicit AModule(std::vector<sharedGO> &gameObjects) : _gameObjects(gameObjects) {};
         virtual ~AModule() = default;
 
         bool operator==(const AModule &rhs) const {
@@ -52,7 +52,7 @@ class AModule {
         virtual void update() = 0;
 
     protected:
-        std::vector<GameObject *> &_gameObjects;
+        std::vector<sharedGO> &_gameObjects;
 
         ModuleConfiguration _moduleConfiguration;
 };
