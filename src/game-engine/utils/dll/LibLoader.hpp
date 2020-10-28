@@ -37,11 +37,11 @@ class LibLoader {
         * Unload the shared library previously loaded
         */
         int unload() {
-            ArcLogger::trace("LibLoader::unload");
-
+            ArcLogger::trace("LibLoader::try_unload");
             if (!_lib) {
                 return (-1);
             }
+            ArcLogger::trace("LibLoader::unload");
             if (dlclose(_lib)) {
                 ArcLogger::warn(dlerror());
                 return (-1);

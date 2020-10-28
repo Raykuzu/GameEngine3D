@@ -8,19 +8,19 @@
 
 class PhysicsModule : public AModule {
     public:
-        explicit PhysicsModule(std::vector<GameObject *> &gameObjects) : AModule(gameObjects) {};
+        explicit PhysicsModule(std::vector<sharedGO> &gameObjects) : AModule(gameObjects) {};
         ~PhysicsModule() override = default;
 
         void init() override {
-            ArcLogger::debug("PhysicsModule::init");
+            ArcLogger::trace("PhysicsModule::init");
         }
 
         void term() override {
-            ArcLogger::debug("PhysicsModule::term");
+            ArcLogger::trace("PhysicsModule::term");
         }
 
         void update() override {
-            ArcLogger::debug("PhysicsModule::update");
+            //ArcLogger::trace("PhysicsModule::update");
         }
 
     private:
