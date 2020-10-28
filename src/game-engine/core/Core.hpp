@@ -19,6 +19,21 @@ class Core {
 
         /* Config */
 
+        void configure() {
+            ArcLogger::trace("Core::configure");
+            /*if (_moduleManagerTHandler.started()) {
+                _moduleManagerTHandler.stop();
+            }
+            _moduleManager.destroyModules();*/
+            _configured = true;
+            _moduleManager.configure(_conf->getConfiguration());
+        }
+
+        bool hasConf() {
+            ArcLogger::trace("Core::hasConf");
+            return (_conf != nullptr);
+        }
+
         bool loadConf(std::string const &path) {
             ArcLogger::trace("Core::loadConf");
             if (_confLoader.load(path) == -1) {
@@ -34,22 +49,6 @@ class Core {
                 checkAndExecute("unloadConf");
                 _confLoader.unload();
             }
-        }
-
-        void configure() {
-            ArcLogger::trace("Core::configure");
-            /*if (_moduleManagerTHandler.started()) {
-                _moduleManagerTHandler.stop();
-            }
-            _moduleManager.destroyGameObjects();
-            _moduleManager.destroyModules();*/
-            _configured = true;
-            _moduleManager.configure(_conf->getConfiguration());
-        }
-
-        bool hasConf() {
-            ArcLogger::trace("Core::hasConf");
-            return (_conf != nullptr);
         }
 
         /* Game */
@@ -100,6 +99,15 @@ class Core {
             if (_moduleManagerTHandler.started()) {
                 _moduleManagerTHandler.stop();
             }
+        }
+
+        void cleanupModuleManager() {
+            ArcLogger::trace("Core::cleanupModuleManager");
+            if (_moduleManagerTHandler.started()) {
+                ArcLogger::warn("Can't cleanup module manager while he is running");
+                return;
+            }
+            _moduleManager.destroyModules();
         }
 
     private:
