@@ -47,5 +47,6 @@ std::map<std::string, std::pair<CommandType, ssize_t>> CommandResolver::commands
         {"HELP", {CommandType::HELP, 0}},
         {"BASH", {CommandType::BASH, -1}},
         {"LOAD_GAME", {CommandType::LOAD_GAME, 1}},
+        {"STOP", {CommandType::STOP, 0}},
         {"LOAD_CONF", {CommandType::LOAD_CONF, 1}}
 };
