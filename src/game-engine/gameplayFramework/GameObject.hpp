@@ -6,10 +6,11 @@
 
 #include <map>
 #include <vector>
+#include <functional>
+#include <memory>
 #include "ArcLogger.hpp"
 #include "Uuid.hpp"
 #include "transform.hh"
-#include "functional"
 
 static std::map<Component, std::function<component_p ()>> compMap = {
         {Component::TRANSFORM, transform_t::createComponent}
