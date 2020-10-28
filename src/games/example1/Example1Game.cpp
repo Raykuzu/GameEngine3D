@@ -16,11 +16,9 @@ class Example1Game : public AGame {
 
         void init() override {
             ArcLogger::trace("Example1Game::init");
-            GameObject *object1 = new GameObject(Component::TRANSFORM);
-            GameObject *object2 = new GameObject(Component::TRANSFORM);
+            sharedGO object1 = _gamePlayFramework.createGameObject(Component::TRANSFORM);
+            sharedGO object2 = _gamePlayFramework.createGameObject(Component::TRANSFORM);
 
-            _gamePlayFramework.registerGameObject(object1);
-            _gamePlayFramework.registerGameObject(object2);
         }
 
         void term() override {
@@ -38,10 +36,12 @@ class Example1Game : public AGame {
 
 extern "C" {
     AGame *loadGame(GamePlayFramework &gamePlayFramework) {
+        ArcLogger::trace("Extern loadGame");
         return (new Example1Game(gamePlayFramework));
     }
 
     void unloadGame(AGame *game) {
+        ArcLogger::trace("Extern unloadGame");
         delete game;
     }
 }
