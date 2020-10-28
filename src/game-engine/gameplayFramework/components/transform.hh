@@ -9,8 +9,15 @@
 typedef struct transform_s : public component_t {
     transform_s() : component_s(Component::TRANSFORM) {};
 
+    void assign(component_p other) override {
+        struct transform_s *casted = dynamic_cast<struct transform_s *>(other);
+
+        this->test = casted->test;
+    }
+
     static component_p createComponent();
 
+    int test = 0;
     // TODO A vous de vous démerder pour les datas
 } transform_t;
 

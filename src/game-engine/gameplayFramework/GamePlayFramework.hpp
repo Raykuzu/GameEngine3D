@@ -11,13 +11,15 @@ class GamePlayFramework {
         explicit GamePlayFramework(ModuleManager &moduleManager) : _moduleManager(moduleManager) {}
         ~GamePlayFramework() = default;
 
-        void registerGameObject(GameObject *gameObject) {
+        sharedGO createGameObject(unsigned int flags) {
+            std::shared_ptr<GameObject> gameObject = std::make_shared<GameObject>(flags);
             _moduleManager.registerGameObject(gameObject);
+            return (gameObject);
         }
 
-        void unregisterGameObject(GameObject *gameObject) {
-            _moduleManager.unregisterGameObject(gameObject);
-        }
+        //void deleteGameObject(GameObject *gameObject) {
+        //    _moduleManager.unregisterGameObject(gameObject);
+        //}
     private:
         ModuleManager &_moduleManager;
 };
