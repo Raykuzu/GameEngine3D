@@ -32,11 +32,15 @@ typedef struct collider_s : public component_t {
     explicit collider_s(Collider type = NOCOLLIDER) : component_s(Component::COLLIDER), _colliderType(type) {};
     static component_p createComponent();
 
+    void addCollider(Collider type);
+
     void assign(struct component_s *other) override {
         struct collider_s *casted = dynamic_cast<collider_s *>(other);
 
         this->_colliderType = casted->_colliderType;
-        this->_colliderData->assign(casted->_colliderData);
+        if (this->_colliderData != nullptr) {
+            this->_colliderData->assign(casted->_colliderData);
+        }
     };
 
 
@@ -76,6 +80,20 @@ typedef struct sphereCollider_s : public colliderData_t {
     float _radius;
     // TODO A vous de vous démerder pour les datas
 } sphereCollider_t;
+
+void collider_s::addCollider(Collider type) {
+        _colliderType = type;
+        switch (type) {
+            case SPHERE:
+                _colliderData = new sphereCollider_t ();
+                break;
+            case AABB:
+                _colliderData = new AABBCollider_t ();
+                break;
+            case NOCOLLIDER:
+                break;
+        }
+}
 
 typedef collider_t * collider_comp;
 
