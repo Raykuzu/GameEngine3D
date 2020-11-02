@@ -15,22 +15,26 @@ class ModuleManager {
     public:
         ModuleManager() = default;
         ~ModuleManager() {
-            destroyGameObjects();
-            destroyModules();
+            //destroyGameObjects();
+            //destroyModules();
         };
 
         void destroyModules() {
+            ArcLogger::trace("ModuleManager::destroyModules");
             for (auto &availableMod : availableModules) {
                 availableMod.second.second = false;
                 delete availableMod.second.first;
             }
         }
 
+        /*
         void destroyGameObjects() {
-            for (auto const &gameObject : _gameObjects) {
+            ArcLogger::trace("ModuleManager::destroyGameObjects");
+            for (GameObject *gameObject : _gameObjects) {
                 delete gameObject;
             }
-        }
+            _gameObjects.clear();
+        }*/
 
         void configure(GlobalConfiguration const &configuration) {
             ArcLogger::trace("ModuleManager::configure");
@@ -64,14 +68,14 @@ class ModuleManager {
             }
         }
 
-        void registerGameObject(GameObject *gameObject) {
+        void registerGameObject(sharedGO const &gameObject) {
             ArcLogger::trace("ModuleManager::registerGameObject");
 
             _gameObjects.push_back(gameObject);
         }
 
 
-        void unregisterGameObject(GameObject *gameObject) {
+        void unregisterGameObject(sharedGO const &gameObject) {
             ArcLogger::trace("ModuleManager::unregisterGameObject");
 
             _gameObjects.erase(std::remove(_gameObjects.begin(), _gameObjects.end(), gameObject), _gameObjects.end());
@@ -90,7 +94,7 @@ class ModuleManager {
 
         GlobalConfiguration _configuration;
         std::vector<AModule *> _modules;
-        std::vector<GameObject *> _gameObjects;
+        std::vector<sharedGO> _gameObjects;
 
         std::map<std::string, std::pair<AModule *, bool>> availableModules = {
                 {"physics", {new PhysicsModule(_gameObjects), false}},

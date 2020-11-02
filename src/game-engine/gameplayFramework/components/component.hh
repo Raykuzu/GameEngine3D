@@ -5,6 +5,7 @@
 #pragma once
 
 enum Component : unsigned int {
+    NO_FLAGS    = 0x00,
     TRANSFORM   = 0x01,
     COLLIDER   = 0x02,
     /*EX1         = 0x02,
@@ -18,6 +19,10 @@ typedef struct component_s {
     Component _type;
 
     explicit component_s(Component type) : _type(type) {};
+    virtual ~component_s() = default;
+
+    virtual void assign(struct component_s *other) = 0;
+
 } component_t;
 
 typedef component_t * component_p;

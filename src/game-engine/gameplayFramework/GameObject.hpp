@@ -6,6 +6,8 @@
 
 #include <map>
 #include <vector>
+#include <functional>
+#include <memory>
 #include "ArcLogger.hpp"
 #include "Uuid.hpp"
 #include "transform.hh"
@@ -17,10 +19,14 @@ static std::map<Component, std::function<component_p ()>> compMap = {
         {Component::COLLIDER, collider_t::createComponent}
 };
 
+class GameObject;
+
+typedef std::shared_ptr<GameObject> sharedGO;
+
 class GameObject {
     public:
         explicit GameObject(unsigned int flags) : _flags(flags), _alive(true) {
-            if (flags == 0x00) {
+            if (flags == NO_FLAGS) {
                 ArcLogger::warn("GameObject need one or more components");
             }
 
@@ -49,15 +55,25 @@ class GameObject {
             return _flags;
         }
 
-        component_p getComponent(Component type) {
+        template<typename T>
+        T getComponent(Component const &type) const {
+            return (static_cast<T>(this->getComponent(type)));
+        }
+
+        template<typename T>
+        void setComponent(Component const &type, T data) {
+            this->getComponent(type)->assign(data);
+        }
+
+    private:
+
+        [[nodiscard]] component_p getComponent(Component const &type) const {
             for (auto component : _components) {
                 if (component->_type == type)
                     return (component);
             }
             return (nullptr);
         }
-
-    private:
 
         unsigned int _flags;
         std::string _id;

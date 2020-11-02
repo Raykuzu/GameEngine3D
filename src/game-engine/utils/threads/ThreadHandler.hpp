@@ -37,6 +37,7 @@ class ThreadHandler {
             _promiseStopThread->set_value();
             _thread.join();
             delete _promiseStopThread;
+            _promiseStopThread = nullptr;
         }
         void stop(std::condition_variable &cond) {
             if (_promiseStopThread == nullptr) {
@@ -47,6 +48,7 @@ class ThreadHandler {
             cond.notify_one();
             _thread.join();
             delete _promiseStopThread;
+            _promiseStopThread = nullptr;
         }
 
     private:

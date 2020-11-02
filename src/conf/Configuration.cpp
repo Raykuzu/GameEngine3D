@@ -28,10 +28,12 @@ class Configuration : public IConfiguration {
 
 extern "C" {
     IConfiguration *loadConf() {
+        ArcLogger::trace("Extern loadConf");
         return (new Configuration());
     }
 
     void unloadConf(IConfiguration *configuration) {
+        ArcLogger::trace("Extern unloadConf");
         delete configuration;
     }
 }

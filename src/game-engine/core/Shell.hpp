@@ -14,6 +14,7 @@ class Shell {
         ~Shell() = default;
 
         void run() {
+            running = true;
             if (!_core.loadConf(DEFAULT_CONFIGURATION_PATH)) {
                 ArcLogger::warn("Can't load default config please provide it later before running a game");
             } else {
@@ -25,7 +26,7 @@ class Shell {
             Command command;
             int exitStatus = 0;
 
-            while (std::getline(std::cin, line)) {
+            while (running && std::getline(std::cin, line)) {
                 command = CommandResolver::resolve(line);
                 switch (command.getType()) {
                     case NONE:
@@ -45,6 +46,10 @@ class Shell {
                             _core.launchModuleManager();
                         }
                         break;
+                    case STOP:
+                        _core.teardownModuleManager();
+                        _core.unloadGame();
+                        break;
                     case LOAD_CONF:
                         _core.unloadConf();
                         if (_core.loadConf(command.getValues().at(0))) {
@@ -59,16 +64,23 @@ class Shell {
                 }
             }
             _core.teardownModuleManager();
+            _core.unloadGame();
+            _core.cleanupModuleManager();
+            _core.unloadConf();
         }
 
         static void printHelp() {
             ArcLogger::vanilla("Hello it's the help //TODO");
         }
+
+        static bool running;
     private:
         Core _core;
 
         static std::map<CommandType, std::function<void ()>> commandsMap;
 };
+
+bool Shell::running = false;
 
 std::map<CommandType, std::function<void ()>> Shell::commandsMap = {
 

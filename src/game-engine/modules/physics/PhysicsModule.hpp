@@ -5,7 +5,7 @@
 #pragma once
 
 #include <assert.h>
-#include <tuple>
+#include <utility>
 #include <algorithm>
 #include "AModule.hpp"
 #include "ArcLogger.hpp"
@@ -14,10 +14,11 @@
 
 #define Square(x) ((x)*(x))
 #define ASSERT(condition) { if(!(condition)){ std::cerr << "ASSERT FAILED: " << #condition << " @ " << __FILE__ << " (" << __LINE__ << ")" << std::endl; } }
+typedef std::pair<EngineMath::Vector3, EngineMath::Vector3> CapsuleCenters;
 
 class PhysicsModule : public AModule {
     public:
-        explicit PhysicsModule(std::vector<GameObject *> &gameObjects) : AModule(gameObjects) {};
+        explicit PhysicsModule(std::vector<sharedGO> &gameObjects) : AModule(gameObjects) {};
         ~PhysicsModule() override = default;
         Intersection intersect(const AABBCollider_t *a, const AABBCollider_t *b) const {
             EngineMath::Vector3 dist1 = b->_minExtend - a->_maxExtend;
@@ -60,44 +61,32 @@ class PhysicsModule : public AModule {
             return A + AB * std::min(std::max(t, 0.0f), 1.0f);
         }
 
-        std::tuple<EngineMath::Vector3> getCapsuleCenters(const capsuleCollider_t * edge) const {
+        CapsuleCenters getCapsuleCenters(const capsuleCollider_t * edge) const {
             EngineMath::Vector3 normal(edge->_tip - edge->_base);
-            aNormalized.normalize();
-            EngineMath::Vector3 aOffset = aNormalized * a->_radius;
+            normal.normalize();
+            EngineMath::Vector3 aOffset = normal * edge->_radius;
+
+            return CapsuleCenters { edge->_base + aOffset, edge->_tip - aOffset };
         }
 
         Intersection intersect(const capsuleCollider_t *a, const capsuleCollider_t *b) const {
-            EngineMath::Vector3 aNormalized(a->_tip - a->_base);
-            aNormalized.normalize();
-            EngineMath::Vector3 aOffset = aNormalized * a->_radius;
-            EngineMath::Vector3 aACenter = a->_base + aOffset;
-            EngineMath::Vector3 aBCenter = a->_tip - aOffset;
+            CapsuleCenters aCenters = getCapsuleCenters(a);
+            CapsuleCenters bCenters = getCapsuleCenters(b);
 
-            EngineMath::Vector3 bNormalized(b->_tip - b->_base);
-            bNormalized.normalize();
-            EngineMath::Vector3 bOffset = bNormalized * b->_radius;
-            EngineMath::Vector3 bACenter = b->_base + bOffset;
-            EngineMath::Vector3 bBCenter = b->_tip - bOffset;
-
-            EngineMath::Vector3 v0 = bACenter - aACenter;
-            EngineMath::Vector3 v1 = bBCenter - aACenter;
-            EngineMath::Vector3 v2 = bACenter - aBCenter;
-            EngineMath::Vector3 v3 = bBCenter - aBCenter;
+            EngineMath::Vector3 v0 = bCenters.first - aCenters.first;
+            EngineMath::Vector3 v1 = bCenters.second - aCenters.first;
+            EngineMath::Vector3 v2 = bCenters.first - aCenters.second;
+            EngineMath::Vector3 v3 = bCenters.second - aCenters.second;
 
             float d0 = v0.dot(v0);
             float d1 = v1.dot(v1);
             float d2 = v2.dot(v2);
             float d3 = v3.dot(v3);
 
-            EngineMath::Vector3 bestA;
-            if (d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1)
-                bestA = aBCenter;
-            else
-                bestA = aACenter;
+            EngineMath::Vector3 bestA = (d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1) ? aCenters.second : aCenters.first;
+            EngineMath::Vector3 bestB = findClosestIntersectionPoint(bCenters.first, bCenters.second, bestA);
 
-            EngineMath::Vector3 bestB = findClosestIntersectionPoint(bACenter, bBCenter, bestA);
-
-            bestA = findClosestIntersectionPoint(aACenter, aBCenter, bestB);
+            bestA = findClosestIntersectionPoint(aCenters.first, aCenters.second, bestB);
             return intersect(new sphereCollider_t(bestA, a->_radius), new sphereCollider_t(bestB, b->_radius));
         };
 
@@ -139,7 +128,7 @@ class PhysicsModule : public AModule {
 
         void display() {
             for (unsigned long int i = 0; i < _gameObjects.size(); i++) {
-                transform_t* transform = static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM));
+                transform_t *transform = _gameObjects[i]->getComponent<transform_t*>(Component::TRANSFORM);
                 display(transform);
             }
 
@@ -170,36 +159,37 @@ class PhysicsModule : public AModule {
             float delta = 1;
             ArcLogger::trace("PhysicsModule::update");
             for (unsigned long int i = 0; i < _gameObjects.size(); i++) {
-                transform_t* transform = static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM));
-                collider_t* collider = static_cast<collider_t*>(_gameObjects[i]->getComponent(Component::COLLIDER));
-
+                transform_t* transform = _gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                collider_t* collider = _gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
                 integrate(transform, delta);
-                static_cast<sphereCollider_t*>(collider->_colliderData)->_center = transform->_position;
+                _gameObjects[i]->setComponent(Component::TRANSFORM, transform);
+                _gameObjects[i]->setComponent(Component::COLLIDER, new collider_t(Collider::SPHERE, new sphereCollider_t(EngineMath::Vector3(transform->_position), 1.1)));
                 display(transform);
             }
             for (unsigned long int i = 0; i < _gameObjects.size(); i++) {
-                collider_t* colliderA = static_cast<collider_t*>(_gameObjects[i]->getComponent(Component::COLLIDER));
+                collider_t *colliderA = _gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
 
                 for (unsigned long int j = i + 1; j < _gameObjects.size(); j++) {
-                    collider_t* colliderB = static_cast<collider_t*>(_gameObjects[j]->getComponent(Component::COLLIDER));
+                    collider_t *colliderB = _gameObjects[j]->getComponent<collider_t *>(Component::COLLIDER);
 
                     Intersection inter = intersect(colliderA, colliderB);
                     if (inter.collided) {
-                        transform_t* tr = static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM));
-                        transform_t* trj = static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM));
+                        transform_t *tr = _gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                        transform_t *trj = _gameObjects[j]->getComponent<transform_t *>(Component::TRANSFORM);
 
                         std::cout << "COLLIDED" <<   inter.distance << std::endl;
-                        static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM))->_position.x += inter.distance * (tr->_velocity.x ? (tr->_velocity.x < 0 ? -1 : 1) : 0);
-                        static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM))->_position.y += inter.distance * (tr->_velocity.y ? (tr->_velocity.y < 0 ? -1 : 1) : 0);
-                        static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM))->_position.z += inter.distance * (tr->_velocity.z ? (tr->_velocity.z < 0 ? -1 : 1) : 0);
-                        static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM))->_velocity *= -1; 
-                        static_cast<transform_t*>(_gameObjects[i]->getComponent(Component::TRANSFORM))->_acceleration *= -1;
-
-                        static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM))->_position.x += inter.distance * (trj->_velocity.x ? (trj->_velocity.x < 0 ? -1 : 1) : 0);
-                        static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM))->_position.y += inter.distance * (trj->_velocity.y ? (trj->_velocity.y < 0 ? -1 : 1) : 0);
-                        static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM))->_position.z += inter.distance * (trj->_velocity.z ? (trj->_velocity.z < 0 ? -1 : 1) : 0);                        static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM))->_velocity *= -1; 
-                        static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM))->_velocity *= -1; 
-                        static_cast<transform_t*>(_gameObjects[j]->getComponent(Component::TRANSFORM))->_acceleration *= -1;
+                        _gameObjects[i]->setComponent(Component::TRANSFORM, new transform_t(EngineMath::Vector3(
+                            tr->_position.x + inter.distance * (tr->_velocity.x ? (tr->_velocity.x < 0 ? -1 : 1) : 0),
+                            tr->_position.y + inter.distance * (tr->_velocity.y ? (tr->_velocity.y < 0 ? -1 : 1) : 0),
+                            tr->_position.z + inter.distance * (tr->_velocity.z ? (tr->_velocity.z < 0 ? -1 : 1) : 0)),
+                            tr->_velocity * -1,
+                            tr->_acceleration * -1));
+                        _gameObjects[j]->setComponent(Component::TRANSFORM, new transform_t(EngineMath::Vector3(
+                            trj->_position.x + inter.distance * (trj->_velocity.x ? (trj->_velocity.x < 0 ? -1 : 1) : 0),
+                            trj->_position.y + inter.distance * (trj->_velocity.y ? (trj->_velocity.y < 0 ? -1 : 1) : 0),
+                            trj->_position.z + inter.distance * (trj->_velocity.z ? (trj->_velocity.z < 0 ? -1 : 1) : 0)),
+                            trj->_velocity * -1,
+                            trj->_acceleration * -1));
                     }
                 }
             }
