@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include <GameObject.hpp>
+#include "Scene.hpp"
 #include "ModuleConfiguration.hpp"
 #include "component.hh"
 
 class AModule {
     public:
-        explicit AModule(std::vector<sharedGO> &gameObjects) : _gameObjects(gameObjects) {};
+        AModule() = default;
         virtual ~AModule() = default;
 
         bool operator==(const AModule &rhs) const {
@@ -49,10 +49,9 @@ class AModule {
 
         virtual void term() = 0;
 
-        virtual void update() = 0;
+        virtual void update(Scene &scene) = 0;
 
     protected:
-        std::vector<sharedGO> &_gameObjects;
 
         ModuleConfiguration _moduleConfiguration;
 };

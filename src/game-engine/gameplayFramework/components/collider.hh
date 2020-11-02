@@ -19,7 +19,7 @@ enum Collider : unsigned int {
 
 typedef struct colliderData_s {
     colliderData_s() = default;
-    ~colliderData_s() = default;
+    virtual ~colliderData_s() = default;
 
     virtual void assign(struct colliderData_s *other) = 0;
 
@@ -30,6 +30,11 @@ typedef struct collider_s : public component_t {
     colliderData_t *_colliderData = nullptr;
 
     explicit collider_s(Collider type = NOCOLLIDER) : component_s(Component::COLLIDER), _colliderType(type) {};
+    ~collider_s() override {
+        if (_colliderData != nullptr) {
+            delete _colliderData;
+        }
+    }
     static component_p createComponent();
 
     void addCollider(Collider type);

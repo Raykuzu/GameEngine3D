@@ -14,10 +14,7 @@
 class ModuleManager {
     public:
         ModuleManager() = default;
-        ~ModuleManager() {
-            //destroyGameObjects();
-            //destroyModules();
-        };
+        ~ModuleManager() = default;
 
         void destroyModules() {
             ArcLogger::trace("ModuleManager::destroyModules");
@@ -62,29 +59,33 @@ class ModuleManager {
             ArcLogger::trace("ModuleManager::run");
             while (futureExit.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
                 for (auto module : _modules) {
-                    module->update();
+                    module->update(getSceneById(_actualScene));
                 }
 
             }
         }
 
-        void registerGameObject(sharedGO const &gameObject) {
-            ArcLogger::trace("ModuleManager::registerGameObject");
+        void registerScene(Scene const &scene) {
+            _scenes.push_back(scene);
+        }
 
+        void registerGameObject(std::string const &sceneId, sharedGO const &gameObject) {
+            ArcLogger::trace("ModuleManager::registerGameObject");
+            getSceneById(sceneId).addGameObject(gameObject);
             _gameObjects.push_back(gameObject);
         }
 
-
+        /*
         void unregisterGameObject(sharedGO const &gameObject) {
             ArcLogger::trace("ModuleManager::unregisterGameObject");
 
             _gameObjects.erase(std::remove(_gameObjects.begin(), _gameObjects.end(), gameObject), _gameObjects.end());
-        }
+        }*/
 
 
     private:
         AModule *getModuleByName(std::string const &name) {
-            for (auto module : _modules) {
+            for (auto const &module : _modules) {
                 if (name == module->getModuleConfiguration().getName()) {
                     return (module);
                 }
@@ -92,12 +93,24 @@ class ModuleManager {
             throw std::runtime_error("Module [" + name + "] doesn't exist");
         }
 
+        Scene &getSceneById(std::string const &id) {
+            for (auto& scene : _scenes) {
+                if (id == scene.getId()) {
+                    return (scene);
+                }
+            }
+            throw std::runtime_error("Scene [" + id + "] doesn't exist");
+        }
+
         GlobalConfiguration _configuration;
         std::vector<AModule *> _modules;
         std::vector<sharedGO> _gameObjects;
 
+        std::vector<Scene> _scenes;
+        std::string _actualScene;
+
         std::map<std::string, std::pair<AModule *, bool>> availableModules = {
-                {"physics", {new PhysicsModule(_gameObjects), false}},
+                {"physics", {new PhysicsModule(), false}},
         };
 };
 

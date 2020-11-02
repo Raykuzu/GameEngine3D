@@ -11,7 +11,7 @@
 
 class PhysicsModule : public AModule {
     public:
-        explicit PhysicsModule(std::vector<sharedGO> &gameObjects) : AModule(gameObjects) {};
+        PhysicsModule() = default;
         ~PhysicsModule() override = default;
         Intersection intersect(const AABBCollider_t *a, const AABBCollider_t *b) const {
             EngineMath::Vector3 dist1 = b->_minExtend - a->_maxExtend;
@@ -68,9 +68,10 @@ class PhysicsModule : public AModule {
             ArcLogger::trace("PhysicsModule::term");
         }
 
-        void update() override {
-            //ArcLogger::trace("PhysicsModule::update");
-        }
+        void update(Scene &scene) override {
+            // Do the things here
+            for (auto gameObject : scene.gameObjects) {
 
-    private:
+            }
+        }
 };

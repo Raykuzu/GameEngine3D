@@ -11,9 +11,13 @@ class GamePlayFramework {
         explicit GamePlayFramework(ModuleManager &moduleManager) : _moduleManager(moduleManager) {}
         ~GamePlayFramework() = default;
 
-        sharedGO createGameObject(unsigned int flags) {
-            std::shared_ptr<GameObject> gameObject = std::make_shared<GameObject>(flags);
-            _moduleManager.registerGameObject(gameObject);
+        void createScene(std::string const &id) {
+            _moduleManager.registerScene(Scene(id));
+        }
+
+        sharedGO createGameObject(std::string const &sceneId, unsigned int flags) {
+            sharedGO gameObject = std::make_shared<GameObject>(flags);
+            _moduleManager.registerGameObject(sceneId, gameObject);
             return (gameObject);
         }
 

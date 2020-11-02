@@ -16,8 +16,9 @@ class Example1Game : public AGame {
 
         void init() override {
             ArcLogger::trace("Example1Game::init");
-            sharedGO object1 = _gamePlayFramework.createGameObject(Component::TRANSFORM);
-            sharedGO object2 = _gamePlayFramework.createGameObject(Component::TRANSFORM);
+            _gamePlayFramework.createScene("scene1");
+            sharedGO object1 = _gamePlayFramework.createGameObject("scene1", Component::TRANSFORM);
+            sharedGO object2 = _gamePlayFramework.createGameObject("scene1", Component::TRANSFORM);
 
         }
 
