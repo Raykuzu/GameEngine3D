@@ -9,10 +9,12 @@
 #include "ArcLogger.hpp"
 #include "Uuid.hpp"
 #include "transform.hh"
+#include "collider.hh"
 #include "functional"
 
 static std::map<Component, std::function<component_p ()>> compMap = {
-        {Component::TRANSFORM, transform_t::createComponent}
+        {Component::TRANSFORM, transform_t::createComponent},
+        {Component::COLLIDER, collider_t::createComponent}
 };
 
 class GameObject {

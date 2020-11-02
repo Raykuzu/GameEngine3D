@@ -2,8 +2,8 @@
 #define INTERSECTION_
 
 struct Intersection {
-    bool    collided;
-    float   distance;
+    bool    collided = false;
+    float   distance = 1;
 };
 
 #endif

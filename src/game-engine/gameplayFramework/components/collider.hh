@@ -10,7 +10,8 @@
 enum Collider : unsigned int {
     SPHERE   = 0x01,
     AABB   = 0x02,
-    NOCOLLIDER = 0x4,
+    CAPSULE = 0x04,
+    NOCOLLIDER = 0x08,
     /*EX1         = 0x02,
     EX2         = 0x04,
     EX3         = 0x08,
@@ -28,8 +29,6 @@ typedef struct collider_s : public component_t {
 
     collider_s(Collider type = NOCOLLIDER) : component_s(Component::COLLIDER), _colliderType(type) {};
     static component_p createComponent();
-
-    // TODO A vous de vous démerder pour les datas
 } collider_t;
 
 typedef struct AABBCollider_s : public colliderData_t {
@@ -38,7 +37,6 @@ typedef struct AABBCollider_s : public colliderData_t {
 
     EngineMath::Vector3 _minExtend;
     EngineMath::Vector3 _maxExtend;
-    // TODO A vous de vous démerder pour les datas
 } AABBCollider_t;
 
 typedef struct sphereCollider_s : public colliderData_t {
@@ -47,8 +45,16 @@ typedef struct sphereCollider_s : public colliderData_t {
     
     EngineMath::Vector3 _center;
     float _radius;
-    // TODO A vous de vous démerder pour les datas
 } sphereCollider_t;
+
+typedef struct capsuleCollider_s : public colliderData_t {
+    capsuleCollider_s(EngineMath::Vector3 tip = EngineMath::Vector3(), EngineMath::Vector3 base = EngineMath::Vector3(), float radius = 0):
+    colliderData_t(), _tip(tip), _base(base), _radius(radius) {};
+    
+    EngineMath::Vector3 _tip;
+    EngineMath::Vector3 _base;
+    float _radius;
+} capsuleCollider_t;
 
 typedef collider_t * collider_comp;
 
