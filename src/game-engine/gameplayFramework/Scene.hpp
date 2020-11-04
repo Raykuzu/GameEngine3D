@@ -8,11 +8,11 @@
 
 #include "GameObject.hpp"
 
-typedef void (*updateFunc)(sharedGO);
-
 class Scene {
     public:
-        explicit Scene(std::string id) : _id(std::move(id)) {};
+        explicit Scene(std::string id) : _id(std::move(id)) {
+            _changeScene.first = false;
+        };
         ~Scene() = default;
 
         [[nodiscard]] const std::string &getId() const {
@@ -23,10 +23,25 @@ class Scene {
             gameObjects.push_back(gameObject);
         }
 
+        void addTrigger(ITrigger *trigger) {
+            _triggers.push_back(trigger);
+        }
 
-        // sale mais necessaire pour l'instant (voir la saloperie de constness des getters)
+        [[nodiscard]] const std::vector<ITrigger *> &getTriggers() const {
+            return _triggers;
+        }
+
+        [[nodiscard]] const std::pair<bool, std::string> &getChangeScene() const {
+            return _changeScene;
+        }
+
+    // sale mais necessaire pour l'instant (voir la saloperie de constness des getters)
         std::vector<sharedGO> gameObjects;
 
     private:
         std::string _id;
+
+        std::pair<bool, std::string> _changeScene;
+
+        std::vector<ITrigger *> _triggers;
 };

@@ -15,6 +15,10 @@ class GamePlayFramework {
             _moduleManager.registerScene(Scene(id));
         }
 
+        void addTriggerToScene(std::string const &id, ITrigger *trigger) {
+            _moduleManager.getScene(id).addTrigger(trigger);
+        }
+
         sharedGO createGameObject(std::string const &sceneId, unsigned int flags) {
             sharedGO gameObject = std::make_shared<GameObject>(flags);
             _moduleManager.registerGameObject(sceneId, gameObject);
