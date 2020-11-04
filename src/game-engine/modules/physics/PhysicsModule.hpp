@@ -20,75 +20,126 @@ class PhysicsModule : public AModule {
     public:
         explicit PhysicsModule(std::vector<sharedGO> &gameObjects) : AModule(gameObjects) {};
         ~PhysicsModule() override = default;
-        Intersection intersect(const AABBCollider_t *a, const AABBCollider_t *b) const {
-            EngineMath::Vector3 dist1 = b->_minExtend - a->_maxExtend;
-            EngineMath::Vector3 dist2 = a->_minExtend - b->_maxExtend;
-            EngineMath::Vector3 max = dist1.max(dist2);
-            float maxVal = max.maxValue();
 
-            return {0 > maxVal, maxVal};
+        Intersection intersect(const AABBCollider_t *a, const AABBCollider_t *b) const {
+            EngineMath::Vector3 minA = a->getMin();
+            EngineMath::Vector3 minB = b->getMin();
+            EngineMath::Vector3 maxA = a->getMax();
+            EngineMath::Vector3 maxB = b->getMax();
+
+            return {
+                (minA.x <= maxB.x && maxA.x >= minB.x) &&
+                (minA.y <= maxB.y && maxA.y >= minB.y) &&
+                (minA.z <= maxB.z && maxA.z >= minB.z)
+            , 1};
         };
+
         Intersection intersect(const sphereCollider_t *a, const sphereCollider_t *b) const {
             float radiuses = a->_radius + b->_radius;
-            float distance = a->_center.distance(b->_center);
+            float distance = a->_position.distance(b->_position);
+
             return {radiuses > distance, distance - radiuses};
         };
 
         Intersection intersect(const AABBCollider_t *a, const sphereCollider_t *b) const {
-            float squaredRadius = Square(b->_radius);
+            EngineMath::Vector3 closestPoint = a->getClosestPoint(b->_position);
+            float distSquare = (b->_position - closestPoint).dotSquare();
+            float radiusSquare = b->_radius * b->_radius;
 
-            if (b->_center.x < a->_minExtend.x)
-                squaredRadius -= Square(b->_center.x - a->_minExtend.x);
-            else if (b->_center.x > a->_maxExtend.x)
-                squaredRadius -= Square(b->_center.x - a->_maxExtend.x);
-
-            if (b->_center.y < a->_minExtend.y)
-                squaredRadius -= Square(b->_center.y - a->_minExtend.y);
-            else if (b->_center.y > a->_maxExtend.y)
-                squaredRadius -= Square(b->_center.y - a->_maxExtend.y);
-
-            if (b->_center.z < a->_minExtend.z)
-                squaredRadius -= Square(b->_center.z - a->_minExtend.z);
-            else if (b->_center.z > a->_maxExtend.z)
-                squaredRadius -= Square(b->_center.z - a->_maxExtend.z);
-
-            return { squaredRadius > 0, -squaredRadius };
+            return { distSquare < radiusSquare, distSquare - radiusSquare };
         }
 
-        EngineMath::Vector3 findClosestIntersectionPoint(EngineMath::Vector3 A, EngineMath::Vector3 B, EngineMath::Vector3 Point) const {
-            EngineMath::Vector3 AB = B - A;
-            float t = (Point - A).dot(AB) / AB.dot(AB);
-            return A + AB * std::min(std::max(t, 0.0f), 1.0f);
+        Intersection intersect(const OBBCollider_t *a, const sphereCollider_t *b) const {
+            EngineMath::Vector3 closestPoint = a->getClosestPoint(b->_position);
+            float distSquare = (b->_position - closestPoint).dotSquare();
+            float radiusSquare = b->_radius * b->_radius;
+
+            return { distSquare < radiusSquare, distSquare - radiusSquare };
         }
 
-        CapsuleCenters getCapsuleCenters(const capsuleCollider_t * edge) const {
-            EngineMath::Vector3 normal(edge->_tip - edge->_base);
-            normal.normalize();
-            EngineMath::Vector3 aOffset = normal * edge->_radius;
+        // Intersection intersect(const OBBCollider_t *a, const OBBCollider_t *b) const {
+        // }
 
-            return CapsuleCenters { edge->_base + aOffset, edge->_tip - aOffset };
-        }
+        // Intersection intersect(const AABBCollider_t *a, const sphereCollider_t *b) const {
+        //     float squaredRadius = Square(b->_radius);
 
-        Intersection intersect(const capsuleCollider_t *a, const capsuleCollider_t *b) const {
-            CapsuleCenters aCenters = getCapsuleCenters(a);
-            CapsuleCenters bCenters = getCapsuleCenters(b);
+        //     if (b->_position.x < a->_minExtend.x)
+        //         squaredRadius -= Square(b->_position.x - a->_minExtend.x);
+        //     else if (b->_position.x > a->_maxExtend.x)
+        //         squaredRadius -= Square(b->_position.x - a->_maxExtend.x);
 
-            EngineMath::Vector3 v0 = bCenters.first - aCenters.first;
-            EngineMath::Vector3 v1 = bCenters.second - aCenters.first;
-            EngineMath::Vector3 v2 = bCenters.first - aCenters.second;
-            EngineMath::Vector3 v3 = bCenters.second - aCenters.second;
+        //     if (b->_position.y < a->_minExtend.y)
+        //         squaredRadius -= Square(b->_position.y - a->_minExtend.y);
+        //     else if (b->_position.y > a->_maxExtend.y)
+        //         squaredRadius -= Square(b->_position.y - a->_maxExtend.y);
 
-            float d0 = v0.dot(v0);
-            float d1 = v1.dot(v1);
-            float d2 = v2.dot(v2);
-            float d3 = v3.dot(v3);
+        //     if (b->_position.z < a->_minExtend.z)
+        //         squaredRadius -= Square(b->_position.z - a->_minExtend.z);
+        //     else if (b->_position.z > a->_maxExtend.z)
+        //         squaredRadius -= Square(b->_position.z - a->_maxExtend.z);
 
-            EngineMath::Vector3 bestA = (d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1) ? aCenters.second : aCenters.first;
-            EngineMath::Vector3 bestB = findClosestIntersectionPoint(bCenters.first, bCenters.second, bestA);
+        //     return { squaredRadius > 0, -squaredRadius };
+        // }
 
-            bestA = findClosestIntersectionPoint(aCenters.first, aCenters.second, bestB);
-            return intersect(new sphereCollider_t(bestA, a->_radius), new sphereCollider_t(bestB, b->_radius));
-        };
+        // EngineMath::Vector3 findClosestIntersectionPoint(EngineMath::Vector3 A, EngineMath::Vector3 B, EngineMath::Vector3 Point) const {
+        //     EngineMath::Vector3 AB = B - A;
+        //     float t = (Point - A).dot(AB) / AB.dot(AB);
+        //     return A + AB * std::min(std::max(t, 0.0f), 1.0f);
+        // }
+
+        // CapsuleCenters getCapsuleCenters(const capsuleCollider_t * edge) const {
+        //     EngineMath::Vector3 normal(edge->_tip - edge->_base);
+        //     normal.normalize();
+        //     EngineMath::Vector3 aOffset = normal * edge->_radius;
+
+        //     return CapsuleCenters { edge->_base + aOffset, edge->_tip - aOffset };
+        // }
+
+        // Intersection intersect(const capsuleCollider_t *a, const capsuleCollider_t *b) const {
+        //     CapsuleCenters aCenters = getCapsuleCenters(a);
+        //     CapsuleCenters bCenters = getCapsuleCenters(b);
+
+        //     EngineMath::Vector3 v0 = bCenters.first - aCenters.first;
+        //     EngineMath::Vector3 v1 = bCenters.second - aCenters.first;
+        //     EngineMath::Vector3 v2 = bCenters.first - aCenters.second;
+        //     EngineMath::Vector3 v3 = bCenters.second - aCenters.second;
+
+        //     float d0 = v0.dot(v0);
+        //     float d1 = v1.dot(v1);
+        //     float d2 = v2.dot(v2);
+        //     float d3 = v3.dot(v3);
+
+        //     EngineMath::Vector3 bestA = (d2 < d0 || d2 < d1 || d3 < d0 || d3 < d1) ? aCenters.second : aCenters.first;
+        //     EngineMath::Vector3 bestB = findClosestIntersectionPoint(bCenters.first, bCenters.second, bestA);
+
+        //     bestA = findClosestIntersectionPoint(aCenters.first, aCenters.second, bestB);
+        //     return intersect(new sphereCollider_t(bestA, a->_radius), new sphereCollider_t(bestB, b->_radius));
+        // };
+
+        // float computeHalfSizeOnAxis(const OBBCollider_t *obb, const EngineMath::Vector3 axis) const {
+        //     return (fabs((obb->_xAxis * obb->_halfSize.x).dot(axis)) + fabs((obb->_yAxis * obb->_halfSize.y).dot(axis)) + fabs((obb->_zAxis * obb->_halfSize.z).dot(axis)));
+        // }
+
+
+        // Intersection intersect(const OBBCollider_t *a, const OBBCollider_t *b) const {
+        //     const EngineMath::Vector3 gLength = b->_center - a->_center;
+        //     std::vector<EngineMath::Vector3> axes = {
+        //         a->_xAxis, a->_yAxis, a->_zAxis,
+        //         b->_xAxis, b->_yAxis, b->_zAxis,
+        //         a->_xAxis.cross(b->_xAxis), a->_xAxis.cross(b->_yAxis), a->_xAxis.cross(b->_zAxis),
+        //         a->_yAxis.cross(b->_xAxis), a->_yAxis.cross(b->_yAxis), a->_yAxis.cross(b->_zAxis),
+        //         a->_zAxis.cross(b->_xAxis), a->_zAxis.cross(b->_yAxis), a->_zAxis.cross(b->_zAxis),
+        //     };
+        //     int i = 0;
+
+        //     for(auto const& axis: axes) {
+        //         if (fabs(gLength.dot(axis)) >= (fabs(computeHalfSizeOnAxis(a, axis) + computeHalfSizeOnAxis(b, axis)))) {
+        //             return { false, 1 };
+        //         }
+        //         i++;
+        //     }
+        //     return { true, -1 };
+        // };
 
         Intersection intersect(collider_t *a, collider_t *b)  {
             Intersection returnValue = {false, 1};
@@ -108,18 +159,24 @@ class PhysicsModule : public AModule {
             if (a->_colliderType == SPHERE && b->_colliderType == AABB)
                 return intersect(reinterpret_cast<AABBCollider_t*>(b->_colliderData), reinterpret_cast<sphereCollider_t*>(a->_colliderData));
 
-            if (a->_colliderType == CAPSULE && b->_colliderType == CAPSULE)
-                return intersect(reinterpret_cast<capsuleCollider_t*>(a->_colliderData), reinterpret_cast<capsuleCollider_t*>(b->_colliderData));
+            // if (a->_colliderType == SPHERE && b->_colliderType == AABB)
+            //     return intersect(reinterpret_cast<AABBCollider_t*>(b->_colliderData), reinterpret_cast<sphereCollider_t*>(a->_colliderData));
+
+            // if (a->_colliderType == CAPSULE && b->_colliderType == CAPSULE)
+            //     return intersect(reinterpret_cast<capsuleCollider_t*>(a->_colliderData), reinterpret_cast<capsuleCollider_t*>(b->_colliderData));
+
+            // if (a->_colliderType == OBB && b->_colliderType == OBB)
+            //     return intersect(reinterpret_cast<OBBCollider_t*>(a->_colliderData), reinterpret_cast<OBBCollider_t*>(b->_colliderData));
 
             return returnValue;
         }
 
         void display(const sphereCollider_t *obj) {
-            ArcLogger::debug("PHYSICS MODULE: OBJ: SphereCollider, center:" + obj->_center.getDisplayInfo() + ", radius: " + std::to_string(obj->_radius));
+            ArcLogger::debug("PHYSICS MODULE: OBJ: SphereCollider, position:" + obj->_position.getDisplayInfo() + ", radius: " + std::to_string(obj->_radius));
         }
 
         void display(const AABBCollider_t *obj) {
-            ArcLogger::debug("PHYSICS MODULE: OBJ: AABBCollider, minExtend:" + obj->_minExtend.getDisplayInfo() + ", maxExtend: " + obj->_maxExtend.getDisplayInfo());
+            ArcLogger::debug("PHYSICS MODULE: OBJ: AABBCollider, position:" + obj->_position.getDisplayInfo() + ", size: " + obj->_size.getDisplayInfo());
         }
 
         void display(const transform_t *obj) {
@@ -162,7 +219,6 @@ class PhysicsModule : public AModule {
                 transform_t* transform = _gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
                 collider_t* collider = _gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
                 integrate(transform, delta);
-                _gameObjects[i]->setComponent(Component::TRANSFORM, transform);
                 _gameObjects[i]->setComponent(Component::COLLIDER, new collider_t(Collider::SPHERE, new sphereCollider_t(EngineMath::Vector3(transform->_position), 1.1)));
                 display(transform);
             }
@@ -205,20 +261,10 @@ class PhysicsModule : public AModule {
 
             // collider_t * coll = new collider 
 
-            AABBCollider_t *aa1 = new AABBCollider_t (EngineMath::Vector3(0.0f,0.0f,0.0f), EngineMath::Vector3(1.0f,1.0f,1.0f));
-            AABBCollider_t *aa2 = new AABBCollider_t (EngineMath::Vector3(1.0f,1.0f,1.0f), EngineMath::Vector3(2.0f,2.0f,2.0f));
-            AABBCollider_t *aa3 = new AABBCollider_t (EngineMath::Vector3(1.0f,0.0f,0.0f), EngineMath::Vector3(2.0f,1.0f,1.0f));
-            AABBCollider_t *aa4 = new AABBCollider_t (EngineMath::Vector3(0.0f,0.0f,-2.0f), EngineMath::Vector3(1.0f,1.0f,-1.0f));
-            AABBCollider_t *aa5 = new AABBCollider_t (EngineMath::Vector3(0.0f,0.5f,0.0f), EngineMath::Vector3(1.0f,1.5f,1.0f));
-            AABBCollider_t *aa6 = new AABBCollider_t (EngineMath::Vector3(0.3f,0.5f,0.7f), EngineMath::Vector3(1.3f,1.5f,1.7f));
-            AABBCollider_t *aa7 = new AABBCollider_t (EngineMath::Vector3(0.0f,0.0f,0.0f), EngineMath::Vector3(10.0f,10.0f,10.0f));
-
-            capsuleCollider_t *ca1 = new capsuleCollider_t(EngineMath::Vector3(0.0f, 0.0f, 0.0f), EngineMath::Vector3(0.0f,5.0f,0.0f), 1.0f);
-            capsuleCollider_t *ca2 = new capsuleCollider_t(EngineMath::Vector3(3.0f, 3.0f, 3.0f), EngineMath::Vector3(4.0f,4.0f,4.0f), 1.0f);
-            capsuleCollider_t *ca3 = new capsuleCollider_t(EngineMath::Vector3(0.9f, 2.0f, 0.0f), EngineMath::Vector3(4.0f,2.0f,0.0f), 1.0f);
-
-            capsuleCollider_t *ca4 = new capsuleCollider_t(EngineMath::Vector3(0.0f, 0.0f, 0.0f), EngineMath::Vector3(0.0f,1.0f,0.0f), 0.1f);
-            capsuleCollider_t *ca5 = new capsuleCollider_t(EngineMath::Vector3(2.0f, 0.0f, 0.0f), EngineMath::Vector3(-1.0f,2.0f,0.0f), 0.1f);
+            AABBCollider_t *aa1 = new AABBCollider_t (EngineMath::Vector3(0.0f,0.0f,0.0f), EngineMath::Vector3(0.5f, 0.5f, 0.5f));
+            AABBCollider_t *aa2 = new AABBCollider_t (EngineMath::Vector3(1.0f, 1.0f, 1.0f), EngineMath::Vector3(0.5f, 0.5f, 0.5f));
+            AABBCollider_t *aa3 = new AABBCollider_t (EngineMath::Vector3(0.5f, 0.5f, 0.5f), EngineMath::Vector3(0.5f, 0.5f, 0.5f));
+            AABBCollider_t *aa4 = new AABBCollider_t (EngineMath::Vector3(2.0f, 2.0f, 2.0f), EngineMath::Vector3(0.5f, 0.5f, 0.5f));
 
 
             Intersection inter1 = intersect(sp1, sp2);
@@ -227,22 +273,6 @@ class PhysicsModule : public AModule {
             Intersection inter3 = intersect(aa1, aa2);
             Intersection inter4 = intersect(aa1, aa3);
             Intersection inter5 = intersect(aa1, aa4);
-            Intersection inter6 = intersect(aa1, aa5);
-            Intersection inter7 = intersect(aa1, aa6);
-
-            Intersection inter8 = intersect(aa1, sp1);
-            Intersection inter9 = intersect(aa1, sp1);
-            Intersection inter10 = intersect(aa2, sp1);
-            Intersection inter11 = intersect(aa7, sp4);
-
-            // Intersection inter12 = intersect(ca1, ca2);
-            // Intersection inter13 = intersect(ca1, ca3);
-
-            Intersection inter13 = intersect(ca4, ca5);
-
-            std::cout << "ALED-9: " << inter9.distance << std::endl;
-            std::cout << "ALED-10: " << inter10.distance << std::endl;
-            std::cout << "ALED-11: " << inter11.distance << std::endl;
 
 
             ASSERT(inter1.collided == false);
@@ -251,32 +281,9 @@ class PhysicsModule : public AModule {
             ASSERT(inter2.collided == true);
             ASSERT(inter2.distance == -0.5f);
 
-            ASSERT(inter3.collided == false);
-            ASSERT(inter3.distance == 0.00f);
-
-            ASSERT(inter4.collided == false);
-            ASSERT(inter4.distance == 0.00f);
-
+            ASSERT(inter3.collided == true);
+            ASSERT(inter4.collided == true);
             ASSERT(inter5.collided == false);
-            ASSERT(inter5.distance == 1.00f);
-
-            ASSERT(inter6.collided == true);
-            ASSERT(inter6.distance == -0.5f);
-
-            ASSERT(inter7.collided == true);
-            ASSERT(inter7.distance == -0.3f);
-
-            ASSERT(inter8.collided == true);
-
-            ASSERT(inter9.collided == true);
-
-            ASSERT(inter10.collided == false);
-
-            ASSERT(inter11.collided == true);
-
-            // ASSERT(inter12.collided == false);
-
-            // ASSERT(inter13.collided == true);
 
 
             integrate(tr, 1);

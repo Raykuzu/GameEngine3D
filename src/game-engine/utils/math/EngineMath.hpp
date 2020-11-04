@@ -50,6 +50,11 @@ namespace EngineMath {
         float dot(const Vector3 &other) const {
             return (x * other.x + y * other.y + z * other.z);
         }
+
+        float dotSquare() const {
+            return (x * x + y * y + z * z);
+        }
+
         Vector3 operator-(const Vector3 &other) const {
             return {x - other.x, y - other.y, z - other.z};
         }
@@ -85,7 +90,7 @@ namespace EngineMath {
         float distance (const Vector3 &other) const {
             return (other - *this).length();
         }
-        Vector3 cross(const Vector3 &other) {
+        Vector3 cross(const Vector3 &other) const {
             return {y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x};
         }
         float length() {return pow(x * x + y * y + z * z, 0.5);}
@@ -93,6 +98,66 @@ namespace EngineMath {
         float y;
         float z;
     };
+
+    typedef struct m4_s {
+        union {
+            struct {
+                float _00, _01, _02, _03,
+                    _10, _11, _12, _13,
+                    _20, _21, _22, _23;
+            };
+            float _matrix[16] = { 0, 0, 0, 0,
+                                  0, 0, 0, 0,
+                                  0, 0, 0, 0,
+                                  0, 0, 0, 0 };
+        };
+
+        float* operator[](int i) {
+            return &(_matrix[i * 4]);
+        };
+    } m4_t;
+
+    typedef struct m3_s {
+        union {
+            struct {
+                float _00, _01, _02,
+                    _10, _11, _12,
+                    _20, _21, _22;
+            };
+            float _matrix[9] = { 0, 0, 0,
+                                  0, 0, 0,
+                                  0, 0, 0 };
+        };
+
+        float* operator[](int i) {
+            return &(_matrix[i * 3]);
+        };
+    } m3_t;
+
+    void Transpose(const float *srcMat, float *dstMat, 
+   int srcRows, int srcCols);
+    m3_t Transpose(const m3_t& matrix);
+    m4_t Transpose(const m4_t& matrix);
+    void Transpose(const float *srcMat, float *dstMat, int srcRows, int srcCols) {
+        for (int i = 0; i < srcRows * srcCols; i++) {
+            int row = i / srcRows;
+            int col = i % srcRows;
+            dstMat[i] = srcMat[srcCols * col + row];
+        };
+    }
+
+    m3_t Transpose(const m3_t& matrix) {
+        m3_t result;
+        Transpose(matrix._matrix, result._matrix, 3, 3);
+        return result;
+    }
+
+    m4_t Transpose(const m4_t& matrix) {
+        m4_t result;
+        Transpose(matrix._matrix, result._matrix, 4, 4);
+        return result;
+    }
 }
+
 
 #endif
