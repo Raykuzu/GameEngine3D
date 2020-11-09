@@ -40,7 +40,7 @@ class ATrigger : public ITrigger {
 
 
 private:
-        Type _type;
+        Type _type {};
         Compare _compare;
 
         bool _triggered = false;

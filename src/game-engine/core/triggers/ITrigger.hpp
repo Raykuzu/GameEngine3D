@@ -8,7 +8,8 @@ class ITrigger {
     public:
         enum Type {
             INPUT,
-            COLLIDE
+            COLLIDE,
+            SCENE
         };
 
         virtual ~ITrigger() = default;
