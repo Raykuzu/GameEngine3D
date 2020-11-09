@@ -53,9 +53,9 @@ class ModuleManager {
             assert(getModuleByName("trigger") != nullptr);
             while (futureExit.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
                 if (getSceneById(_actualScene).getChangeScene().first) {
-                    // TODO change scene
                     _actualScene = getSceneById(_actualScene).getChangeScene().second;
                 }
+                getSceneById(_actualScene).clock();
                 for (auto module : _modules) {
                     module->update(getSceneById(_actualScene));
                 }

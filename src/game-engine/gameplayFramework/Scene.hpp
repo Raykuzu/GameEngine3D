@@ -5,15 +5,24 @@
 #pragma once
 
 #include <utility>
-
+#include <ctime>
 #include "GameObject.hpp"
 
 class Scene {
     public:
-        explicit Scene(std::string id) : _id(std::move(id)) {
+        explicit Scene(std::string id) : _id(std::move(id)), _time(0, 0) {
             _changeScene.first = false;
         };
         ~Scene() = default;
+
+        void clock() {
+            _time.second = _time.first;
+            _time.first = std::clock();
+        }
+
+        [[nodiscard]] const std::pair<clock_t, clock_t> &getTime() const {
+            return _time;
+        }
 
         [[nodiscard]] const std::string &getId() const {
             return _id;
@@ -40,6 +49,9 @@ class Scene {
 
     private:
         std::string _id;
+
+        // clock_t is long int
+        std::pair<clock_t , clock_t> _time;
 
         std::pair<bool, std::string> _changeScene;
 
