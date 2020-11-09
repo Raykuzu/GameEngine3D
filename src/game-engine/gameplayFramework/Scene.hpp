@@ -24,6 +24,10 @@ class Scene {
             return _time;
         }
 
+        [[nodiscard]] clock_t getTimeDiff() const {
+            return (_time.second - _time.first);
+        }
+
         [[nodiscard]] const std::string &getId() const {
             return _id;
         }
