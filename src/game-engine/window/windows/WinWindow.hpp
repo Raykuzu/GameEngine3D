@@ -4,6 +4,7 @@
 #include <windowsx.h>
 #include <iostream>
 #include <map>
+#include <queue>
 #include "IWindow.hpp"
 
 #define DEFAULT_WIN_NAME L"My Window"
@@ -120,19 +121,24 @@ class WinWindow : public IWindow {
         }
 
         WindowEvent getEvent() override {
+            WindowEvent currentEvent = { WE_UNKNOWN };
             MSG msg = { };
-            GetMessage(&msg, NULL, 0, 0);
+            if (!PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE))
+                return currentEvent;
+
             TranslateMessage(&msg);
             DispatchMessage(&msg);
-            while (!_isThereEvent);
-            _isThereEvent = true;
 
-            return _currentEvent;
+            if (_eventQueue.size() != 0) {
+                currentEvent = _eventQueue.front();
+                _eventQueue.pop();
+            }
+
+            return currentEvent;
         }
 
         void expose() override {
             ShowWindow(_winHandler, (_fullScreen ? SW_MAXIMIZE : SW_SHOWNORMAL ));
-            ArcLogger::trace("TRACE: Window exposed");
         }
 
     private:
@@ -191,22 +197,21 @@ class WinWindow : public IWindow {
                 nullptr
             };
 
-            _currentEvent.type = WE_UNKNOWN;
-
             for (int i = 0; eventHandlers[i] != nullptr; i += 1) {
                 if (eventTypes[i] == msg) {
                     (this->*eventHandlers[i])(hwnd, msg, wParam, lParam);
-                    _isThereEvent = true;
                     return 0;
                 }
             }
-            _isThereEvent = true;
             return DefWindowProc(hwnd, msg, wParam, lParam);
         }
 
         void handleWindowDestroy(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             closeWindow();
-            _currentEvent.type = WE_EXIT;
+            WindowEvent currentEvent;
+            
+            currentEvent.type = WE_EXIT;
+            _eventQueue.push(currentEvent);
         }
 
         void handleWindowPaint(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -218,169 +223,194 @@ class WinWindow : public IWindow {
 
         void handleKeyDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             winInputMap::iterator it = _keyMap.find(wParam);
-            _currentEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
+            WindowEvent currentEvent;
+
+            currentEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input)
+                if (*iIt == currentEvent.input)
                     return;
             }
-            _currentEvent.type = WE_INPUT_PRESSED;
-            _currentlyPressedInput.push_back(_currentEvent.input);
+            currentEvent.type = WE_INPUT_PRESSED;
+            _currentlyPressedInput.push_back(currentEvent.input);
+            _eventQueue.push(currentEvent);
         }
 
         void handleKeyUp(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_INPUT_RELEASED;
+            WindowEvent currentEvent;
+            currentEvent.type = WE_INPUT_RELEASED;
             winInputMap::iterator it = _keyMap.find(wParam);
-            _currentEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
+            currentEvent.input = (it != _keyMap.end()) ? it->second : WI_UNKNOWN;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input) {
+                if (*iIt == currentEvent.input) {
                     _currentlyPressedInput.erase(iIt);
                     break;
                 }
             }
+            _eventQueue.push(currentEvent);
         }
 
         void handleLButtonDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.input = WI_M1;
+            WindowEvent currentEvent;
+            currentEvent.input = WI_M1;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input)
+                if (*iIt == currentEvent.input)
                     return;
             }
-            _currentEvent.type = WE_INPUT_PRESSED;
-            _currentlyPressedInput.push_back(_currentEvent.input);
+            currentEvent.type = WE_INPUT_PRESSED;
+            _currentlyPressedInput.push_back(currentEvent.input);
+            _eventQueue.push(currentEvent);
         }
 
         void handleLButtonUp(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_INPUT_RELEASED;
-            _currentEvent.input = WI_M1;
+            WindowEvent currentEvent;
+            currentEvent.type = WE_INPUT_RELEASED;
+            currentEvent.input = WI_M1;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input) {
+                if (*iIt == currentEvent.input) {
                     _currentlyPressedInput.erase(iIt);
                     break;
                 }
             }
+            _eventQueue.push(currentEvent);
         }
 
         void handleMButtonDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.input = WI_M3;
+            WindowEvent currentEvent;
+            currentEvent.input = WI_M3;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input)
+                if (*iIt == currentEvent.input)
                     return;
             }
-            _currentEvent.type = WE_INPUT_PRESSED;
-            _currentlyPressedInput.push_back(_currentEvent.input);
+            currentEvent.type = WE_INPUT_PRESSED;
+            _currentlyPressedInput.push_back(currentEvent.input);
+            _eventQueue.push(currentEvent);
         }
 
         void handleMButtonUp(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_INPUT_RELEASED;
-            _currentEvent.input = WI_M3;
+            WindowEvent currentEvent;
+            currentEvent.type = WE_INPUT_RELEASED;
+            currentEvent.input = WI_M3;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input) {
+                if (*iIt == currentEvent.input) {
                     _currentlyPressedInput.erase(iIt);
                     break;
                 }
             }
+            _eventQueue.push(currentEvent);
         }
 
         void handleRButtonDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.input = WI_M2;
+            WindowEvent currentEvent;
+            currentEvent.input = WI_M2;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input)
+                if (*iIt == currentEvent.input)
                     return;
             }
-            _currentEvent.type = WE_INPUT_PRESSED;
-            _currentlyPressedInput.push_back(_currentEvent.input);
+            currentEvent.type = WE_INPUT_PRESSED;
+            _currentlyPressedInput.push_back(currentEvent.input);
+            _eventQueue.push(currentEvent);
         }
 
         void handleRButtonUp(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_INPUT_RELEASED;
-            _currentEvent.input = WI_M2;
+            WindowEvent currentEvent;
+            currentEvent.type = WE_INPUT_RELEASED;
+            currentEvent.input = WI_M2;
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input) {
+                if (*iIt == currentEvent.input) {
                     _currentlyPressedInput.erase(iIt);
                     break;
                 }
             }
+            _eventQueue.push(currentEvent);
         }
 
         void handleXButtonDown(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+            WindowEvent currentEvent;
             switch (wParam)
             {
             case 131136:
-                _currentEvent.input = WI_M4;
+                currentEvent.input = WI_M4;
                 break;
             case 65568:
-                _currentEvent.input = WI_M5;
+                currentEvent.input = WI_M5;
                 break;
             default:
-                _currentEvent.input = WI_UNKNOWN;
+                currentEvent.input = WI_UNKNOWN;
                 break;
             }
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input)
+                if (*iIt == currentEvent.input)
                     return;
             }
-            _currentEvent.type = WE_INPUT_PRESSED;
-            _currentlyPressedInput.push_back(_currentEvent.input);
+            currentEvent.type = WE_INPUT_PRESSED;
+            _currentlyPressedInput.push_back(currentEvent.input);
+            _eventQueue.push(currentEvent);
         }
 
         void handleXButtonUp(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_INPUT_RELEASED;
+            WindowEvent currentEvent;
+            currentEvent.type = WE_INPUT_RELEASED;
             switch (wParam)
             {
             case 131072:
-                _currentEvent.input = WI_M4;
+                currentEvent.input = WI_M4;
                 break;
             case 65536:
-                _currentEvent.input = WI_M5;
+                currentEvent.input = WI_M5;
                 break;
             default:
-                _currentEvent.input = WI_UNKNOWN;
+                currentEvent.input = WI_UNKNOWN;
                 break;
             }
 
             for (inputList::iterator iIt = _currentlyPressedInput.begin(); iIt != _currentlyPressedInput.end(); iIt++) {
-                if (*iIt == _currentEvent.input) {
+                if (*iIt == currentEvent.input) {
                     _currentlyPressedInput.erase(iIt);
                     break;
                 }
             }
+            _eventQueue.push(currentEvent);
         }
 
         void handleMouseWheel(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_INPUT_PRESSED;
+            WindowEvent currentEvent;
+            currentEvent.type = WE_INPUT_PRESSED;
             switch (wParam)
             {
             case 7864320:
-                _currentEvent.input = WI_SCROLL_UP;
+                currentEvent.input = WI_SCROLL_UP;
                 break;
             case 4287102976:
-                _currentEvent.input = WI_SCROLL_DOWN;
+                currentEvent.input = WI_SCROLL_DOWN;
                 break;
             default:
-                _currentEvent.input = WI_UNKNOWN;
+                currentEvent.input = WI_UNKNOWN;
                 break;
             }
+            _eventQueue.push(currentEvent);
         }
 
         void handleMouseMove(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-            _currentEvent.type = WE_POINTER_MOTION;
-            _currentEvent.x = GET_X_LPARAM(lParam);
-            _currentEvent.y = GET_Y_LPARAM(lParam);
+            WindowEvent currentEvent;
+            currentEvent.type = WE_POINTER_MOTION;
+            currentEvent.x = GET_X_LPARAM(lParam);
+            currentEvent.y = GET_Y_LPARAM(lParam);
+
+            _eventQueue.push(currentEvent);
         }
 
         HINSTANCE _instance;
         HWND _winHandler;
-        bool _isThereEvent = false;
-        WindowEvent _currentEvent;
+        std::queue<WindowEvent> _eventQueue;
 
         winInputMap _keyMap = {
             {27, WI_ESCAPE},
