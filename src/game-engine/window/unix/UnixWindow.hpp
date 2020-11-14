@@ -86,7 +86,6 @@ class UnixWindow : public IWindow {
         }
 
         WindowEvent getEvent() override {
-            XNextEvent(_display, &_event);
             const int eventTypes[] = { ClientMessage, KeyPress, KeyRelease, MotionNotify, ButtonPress, ButtonRelease };
             WindowEvent (UnixWindow::*eventHandlers[])() = {
                 &UnixWindow::handleClientMessage,
@@ -97,13 +96,16 @@ class UnixWindow : public IWindow {
                 &UnixWindow::handleButtonReleased,
                 nullptr
             };
+            WindowEvent unknownWindowEvent = { WE_UNKNOWN };
+
+            if (!XPending(_display))
+                return unknownWindowEvent;
+            XNextEvent(_display, &_event);
 
             for (int i = 0; eventHandlers[i] != nullptr; i += 1) {
                 if (eventTypes[i] == _event.type)
                     return (this->*eventHandlers[i])();
             }
-
-            WindowEvent unknownWindowEvent = { WE_UNKNOWN };
 
             return unknownWindowEvent;
         }
@@ -157,7 +159,6 @@ class UnixWindow : public IWindow {
         }
 
         WindowEvent handleKeyPress() {
-            _fullScreen ? setWindowSizePos(DEFAULT_WINDOW_X, DEFAULT_WINDOW_Y, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT) : setFullScreen();
             WindowEvent windowEvent;
 
             windowEvent.type = WE_INPUT_PRESSED;
