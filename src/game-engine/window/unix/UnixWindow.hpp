@@ -79,6 +79,8 @@ class UnixWindow : public IWindow {
             _yCoord = attributes.y;
             _width = attributes.width;
             _height = attributes.height;
+            _screenCenterX = _width / 2;
+            _screenCenterY = _height / 2;
             _fullScreen = true;
             ArcLogger::trace("TRACE: Window display mode -> fullscreen");
         }
@@ -89,8 +91,16 @@ class UnixWindow : public IWindow {
             _yCoord = y;
             _width = width;
             _height = height;
+            _screenCenterX = _width / 2;
+            _screenCenterY = _height / 2;
             _fullScreen = false;
             ArcLogger::trace("TRACE: Window display mode -> sized");
+        }
+
+        void resetPointerPos() override {
+            // std::cout << "RESET POINTER" << std::endl;
+            // XWarpPointer(_display, None, _window, 0, 0, 0, 0, _screenCenterX, _screenCenterY);
+            // XFlush(_display);
         }
 
         WindowEvent getEvent() override {
@@ -196,11 +206,17 @@ class UnixWindow : public IWindow {
         }
 
         WindowEvent handleMotionNotify() {
-            WindowEvent windowEvent;
+            WindowEvent windowEvent = { WE_UNKNOWN };
+
+            if (_event.xmotion.x >= _screenCenterX - MOUSE_DEAD_ZONE && _event.xmotion.x <= _screenCenterX + MOUSE_DEAD_ZONE &&
+            _event.xmotion.y >= _screenCenterY - MOUSE_DEAD_ZONE && _event.xmotion.y <= _screenCenterY + MOUSE_DEAD_ZONE)
+                return windowEvent;
 
             windowEvent.type = WE_POINTER_MOTION;
-            windowEvent.x = _event.xmotion.x;
-            windowEvent.y = _event.xmotion.y;
+            windowEvent.x = _event.xmotion.x - _screenCenterX;
+            windowEvent.y = _event.xmotion.y - _screenCenterY;
+
+            resetPointerPos();
 
             return windowEvent;
         }

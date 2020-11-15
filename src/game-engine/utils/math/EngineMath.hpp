@@ -15,6 +15,13 @@ namespace EngineMath {
     )
     #define DEG2RAD(x) ((x) * 0.0174533f)
     #define cot(x) 1/tan(x)
+    struct Vector2 {
+        float x;
+        float y;
+        Vector2(): x(0), y(0) {};
+        Vector2(float x, float y): x(x), y(y) {};
+
+    };
     class Vector3 {
     public:
         Vector3(): x(0), y(0), z(0) {};

@@ -27,6 +27,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <array>
+#include "AModule.hpp"
 #include "EngineMath.hpp"
 
 #ifdef _WIN32
@@ -198,12 +199,19 @@ struct UniformBufferObject {
 
 
 
-class HelloTriangleApplication {
+class PhysicsModule : public AModule {
 public:
-    void run() {
+
+    void init() {
         initWindow();
         initVulkan();
+
+    }
+    void update(Scene &scene) {
         mainLoop();
+    }
+
+    void term() {
         cleanup();
     }
 

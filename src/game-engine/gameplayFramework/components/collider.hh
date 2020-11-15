@@ -8,7 +8,7 @@
 #include "component.hh"
 #include "EngineMath.hpp"
 
-#define GRAVITY_CONST EngineMath::Vector3()(0.0f, -9.82f, 0.0f)
+#define GRAVITY_CONST EngineMath::Vector3(0.0f, -9.82f, 0.0f)
 
 enum Collider : unsigned int {
     SPHERE   = 0x01,

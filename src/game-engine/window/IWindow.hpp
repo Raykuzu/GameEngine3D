@@ -7,13 +7,16 @@
 #define DEFAULT_WINDOW_HEIGHT  800
 #define DEFAULT_WINDOW_X 0
 #define DEFAULT_WINDOW_Y 0
+#define MOUSE_DEAD_ZONE 5
 
 #ifdef _WIN32
+    #include <windows.h>
     typedef HINSTANCE WINDOW_INSTANCE;
     typedef HWND WINDOW_HANDLER;
 #endif
 
 #ifdef __linux__
+    #include <X11/Xlib.h>
     typedef Display* WINDOW_INSTANCE;
     typedef Window WINDOW_HANDLER;
 #endif
@@ -22,7 +25,7 @@ enum WindowInput {
     WI_UNKNOWN = -1,
     WI_ESCAPE,
     WI_F1,
-    WI_F2,
+    WI_F2,  
     WI_F3,
     WI_F4,
     WI_F5,
@@ -179,6 +182,7 @@ public:
     virtual void closeWindow() = 0;
     virtual void setFullScreen() = 0;
     virtual void setWindowSizePos(int x, int y, unsigned int width, unsigned int height) = 0;
+    virtual void resetPointerPos() = 0;
     bool isOpened() const {
         return _windowOpened;
     };
@@ -193,6 +197,8 @@ protected:
     int _yCoord = DEFAULT_WINDOW_Y;
     unsigned int _width = DEFAULT_WINDOW_WIDTH;
     unsigned int _height = DEFAULT_WINDOW_HEIGHT;
+    unsigned int _screenCenterX = 0;
+    unsigned int _screenCenterY = 0;
     bool _windowOpened = false;
     bool _fullScreen = false;
     inputList _currentlyPressedInput;

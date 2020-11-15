@@ -178,6 +178,8 @@ class PhysicsModule : public AModule {
             result[4] = EngineMath::Plane(axes[2], axes[2].dot(obb->_position + axes[2] * obb->_size.z));
             result[5] = EngineMath::Plane(axes[2] * -1.0f, -(axes[2].dot(obb->_position - axes[2] * obb->_size.z)));
             result.resize(6);
+
+            return result;
         }
 
         std::vector<EngineMath::Plane> GetPlanes(AABBCollider_t *aabb) {
@@ -191,6 +193,8 @@ class PhysicsModule : public AModule {
             result[4] = EngineMath::Plane(axes[2], axes[2].dot(aabb->_position + axes[2] * aabb->_size.z));
             result[5] = EngineMath::Plane(axes[2] * -1.0f, -(axes[2].dot(aabb->_position - axes[2] * aabb->_size.z)));
             result.resize(6);
+
+            return result;
         }
 
         bool ClipToPlane(const EngineMath::Plane& plane, const Line& line, EngineMath::Vector3* outPoint) {
@@ -1129,23 +1133,107 @@ class PhysicsModule : public AModule {
                 transform_t *transform = scene.gameObjects[i]->getComponent<transform_t*>(Component::TRANSFORM);
                 display(transform);
             }
-
         }
 
         /*
         ** COLLIDER PART
         */
 
+       CollisionManifold FindCollisionFeatures(collider_t *a, collider_t *b) {
+            CollisionManifold result;
+            ResetCollisionManifold(&result);
+
+            if (a->_colliderType == SPHERE && b->_colliderType == SPHERE) {
+                result = FindCollisionFeatures(reinterpret_cast<sphereCollider_t*>(a->_colliderData), reinterpret_cast<sphereCollider_t*>(b->_colliderData));
+            } else if (a->_colliderType == SPHERE && b->_colliderType == OBB) {
+                result = FindCollisionFeatures(reinterpret_cast<OBBCollider_t*>(b->_colliderData), reinterpret_cast<sphereCollider_t*>(a->_colliderData));
+                result.normal = result.normal * -1.0f;
+            } else if (a->_colliderType == SPHERE && b->_colliderType == AABB) {
+                result = FindCollisionFeatures(reinterpret_cast<AABBCollider_t*>(b->_colliderData), reinterpret_cast<sphereCollider_t*>(a->_colliderData));
+                result.normal = result.normal * -1.0f;
+            } else if (a->_colliderType == OBB && b->_colliderType == OBB) {
+                result = FindCollisionFeatures(reinterpret_cast<OBBCollider_t*>(a->_colliderData), reinterpret_cast<OBBCollider_t*>(b->_colliderData));
+            } else if (a->_colliderType == OBB && b->_colliderType == SPHERE) {
+                result = FindCollisionFeatures(reinterpret_cast<OBBCollider_t*>(a->_colliderData), reinterpret_cast<sphereCollider_t*>(b->_colliderData));
+            } else if (a->_colliderType == OBB && b->_colliderType == AABB) {
+                result = FindCollisionFeatures(reinterpret_cast<AABBCollider_t*>(b->_colliderData), reinterpret_cast<OBBCollider_t*>(a->_colliderData));
+                result.normal = result.normal * -1.0f;
+            } else if (a->_colliderType == AABB && b->_colliderType == AABB) {
+                result = FindCollisionFeatures(reinterpret_cast<AABBCollider_t*>(a->_colliderData), reinterpret_cast<AABBCollider_t*>(b->_colliderData));
+            } else if (a->_colliderType == AABB && b->_colliderType == OBB) {
+                result = FindCollisionFeatures(reinterpret_cast<AABBCollider_t*>(a->_colliderData), reinterpret_cast<OBBCollider_t*>(b->_colliderData));
+            } else if (a->_colliderType == AABB && b->_colliderType == SPHERE) {
+                result = FindCollisionFeatures(reinterpret_cast<AABBCollider_t*>(a->_colliderData), reinterpret_cast<sphereCollider_t*>(b->_colliderData));
+            }
+
+            return result;
+       }
+
+        void ApplyImpulse(collider_t *a, collider_t *b, const CollisionManifold collisionManifold, int c) {
+            float invMassA = InvMass(a);
+            float invMassB = InvMass(b);
+            float invMassSum = invMassA + invMassB;
+
+            if (invMassSum == 0.0f) 
+                return;
+
+            EngineMath::Vector3 relativeVel = b->_velocity - a->_velocity;
+            EngineMath::Vector3 relativeNorm = collisionManifold.normal;
+
+            relativeNorm.normalize();
+
+            if (relativeVel.dot(relativeNorm) > 0.0f)
+                return;
+
+            float e = fminf(a->_cor, b->_cor);
+            float numerator = (-(1.0f + e) * relativeVel.dot(relativeNorm));
+            float j = numerator / invMassSum;
+
+            if (collisionManifold.contacts.size() > 0.0f && j != 0.0f)
+                j /= static_cast<float>(collisionManifold.contacts.size());
+
+            EngineMath::Vector3 impulse = relativeNorm * j;
+            a->_velocity = a->_velocity - impulse * invMassA;
+            b->_velocity = b->_velocity + impulse * invMassB;
+
+            EngineMath::Vector3 t = relativeVel - (relativeNorm * relativeVel.dot(relativeNorm));
+
+            if (CMP(MagnitudeSq(t), 0.0f))
+                return;
+
+            t.normalize();
+            numerator = -relativeVel.dot(t);
+
+            float jt = numerator / invMassSum;
+
+            if (collisionManifold.contacts.size() > 0.0f && jt != 0.0f)
+                jt /= static_cast<float>(collisionManifold.contacts.size());
+
+            if (CMP(jt, 0.0f))
+                return;
+
+            float friction = sqrtf(a->_friction * a->_friction);
+            if (jt> j * friction)
+                jt = j * friction;
+            else if (jt< -j * friction)
+                jt = -j * friction;
+
+            EngineMath::Vector3 tangentImpuse = t * jt;
+
+            a->_velocity = a->_velocity - tangentImpuse * invMassA;
+            b->_velocity = b->_velocity + tangentImpuse * invMassB;
+        }
+
         void SynchCollisionVolumes(collider_t *collider) {
             switch (collider->_colliderType) {
                 case SPHERE:
-                    reinterpret_cast<sphereCollider_t*>(a->_colliderData)->_position = collider->_position;
+                    reinterpret_cast<sphereCollider_t*>(collider->_colliderData)->_position = collider->_position;
                     break;
                 case OBB:
-                    reinterpret_cast<OBBCollider_t*>(a->_colliderData)->_position = collider->_position;
+                    reinterpret_cast<OBBCollider_t*>(collider->_colliderData)->_position = collider->_position;
                     break;
                 case AABB:
-                    reinterpret_cast<AABBCollider_t*>(a->_colliderData)->_position = collider->_position;
+                    reinterpret_cast<AABBCollider_t*>(collider->_colliderData)->_position = collider->_position;
                     break;
                 default:
                     break;
@@ -1156,17 +1244,17 @@ class PhysicsModule : public AModule {
             return (collider->_mass == 0.0f) ? 0.0f : 1.0f / collider->_mass;
         }
 
-        void AddLinearImpulse(collider_t *collider, const vec3& impulse) {
+        void AddLinearImpulse(collider_t *collider, const EngineMath::Vector3& impulse) {
             collider->_velocity += impulse;
         }
 
         void updateVolumeCollider(collider_t *collider, float deltaTime) {
             const float damping = 0.98f;
-            EngineMath::Vector3 acceleration = collider->_forces * InvMass();
-            collider->velocity = collider->_velocity + collider->_acceleration * deltaTime;
-            collider->velocity = collider->_velocity * damping;
-            collider->position = collider->position + collider->velocity * deltaTime;
-            SynchCollisionVolumes()
+            EngineMath::Vector3 acceleration = collider->_forces * InvMass(collider);
+            collider->_velocity = collider->_velocity + acceleration * deltaTime;
+            collider->_velocity = collider->_velocity * damping;
+            collider->_position = collider->_position + collider->_velocity * deltaTime;
+            SynchCollisionVolumes(collider);
         }
 
         void applyForcesToVolumeCollider(collider_t *collider) {
@@ -1175,7 +1263,7 @@ class PhysicsModule : public AModule {
 
         void updateCollider(collider_t *collider, float deltaTime) {
             if (collider->_colliderType == SPHERE || collider->_colliderType == AABB || collider->_colliderType == OBB)
-                updateVolumeCollider(collider);
+                updateVolumeCollider(collider, deltaTime);
         }
 
         void applyForcesToCollider(collider_t *collider) {
