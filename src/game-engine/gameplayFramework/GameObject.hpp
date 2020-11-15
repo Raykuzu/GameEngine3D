@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include "ABiTrigger.hpp"
 #include "ArcLogger.hpp"
 #include "Uuid.hpp"
 #include "transform.hh"
@@ -65,7 +66,15 @@ class GameObject {
             this->getComponent(type)->assign(data);
         }
 
-    private:
+        void addTrigger(ITrigger *trigger) {
+            _triggers.push_back(trigger);
+        }
+
+        [[nodiscard]] const std::vector<ITrigger *> &getTriggers() const {
+            return _triggers;
+        }
+
+private:
 
         [[nodiscard]] component_p getComponent(Component const &type) const {
             for (auto component : _components) {
@@ -74,9 +83,11 @@ class GameObject {
             }
             return (nullptr);
         }
-
         unsigned int _flags;
         std::string _id;
         bool _alive;
+
         std::vector<component_p> _components;
+
+        std::vector<ITrigger *> _triggers;
 };

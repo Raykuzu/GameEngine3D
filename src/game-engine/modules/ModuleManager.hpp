@@ -7,9 +7,11 @@
 #include <vector>
 #include <algorithm>
 #include <future>
+#include <cassert>
 #include "ArcLogger.hpp"
 #include "GlobalConfiguration.hpp"
 #include "PhysicsModule.hpp"
+#include "TriggerModule.hpp"
 
 class ModuleManager {
     public:
@@ -23,15 +25,6 @@ class ModuleManager {
                 delete availableMod.second.first;
             }
         }
-
-        /*
-        void destroyGameObjects() {
-            ArcLogger::trace("ModuleManager::destroyGameObjects");
-            for (GameObject *gameObject : _gameObjects) {
-                delete gameObject;
-            }
-            _gameObjects.clear();
-        }*/
 
         void configure(GlobalConfiguration const &configuration) {
             ArcLogger::trace("ModuleManager::configure");
@@ -57,7 +50,12 @@ class ModuleManager {
 
         void run(std::future<void> futureExit) {
             ArcLogger::trace("ModuleManager::run");
+            assert(getModuleByName("trigger") != nullptr);
             while (futureExit.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
+                if (getSceneById(_actualScene).getChangeScene().first) {
+                    _actualScene = getSceneById(_actualScene).getChangeScene().second;
+                }
+                getSceneById(_actualScene).clock();
                 for (auto module : _modules) {
                     module->update(getSceneById(_actualScene));
                 }
@@ -69,19 +67,15 @@ class ModuleManager {
             _scenes.push_back(scene);
         }
 
+        Scene &getScene(std::string const &sceneId) {
+            return (getSceneById(sceneId));
+        }
+
         void registerGameObject(std::string const &sceneId, sharedGO const &gameObject) {
             ArcLogger::trace("ModuleManager::registerGameObject");
             getSceneById(sceneId).addGameObject(gameObject);
             _gameObjects.push_back(gameObject);
         }
-
-        /*
-        void unregisterGameObject(sharedGO const &gameObject) {
-            ArcLogger::trace("ModuleManager::unregisterGameObject");
-
-            _gameObjects.erase(std::remove(_gameObjects.begin(), _gameObjects.end(), gameObject), _gameObjects.end());
-        }*/
-
 
     private:
         AModule *getModuleByName(std::string const &name) {
@@ -110,7 +104,8 @@ class ModuleManager {
         std::string _actualScene;
 
         std::map<std::string, std::pair<AModule *, bool>> availableModules = {
-                {"physics", {new PhysicsModule(), false}},
+                {"trigger", {new TriggerModule(), false}},
+                {"physics", {new PhysicsModule(), false}}
         };
 };
 
