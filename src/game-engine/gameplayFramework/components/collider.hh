@@ -8,12 +8,15 @@
 #include "component.hh"
 #include "EngineMath.hpp"
 
+#define GRAVITY_CONST EngineMath::Vector3()(0.0f, -9.82f, 0.0f)
+
 enum Collider : unsigned int {
     SPHERE   = 0x01,
     AABB   = 0x02,
     CAPSULE = 0x04,
     OBB = 0x08,
-    NOCOLLIDER = 0x16,
+    RAY = 0x16,
+    NOCOLLIDER = 0x32,
     /*EX1         = 0x02,
     EX2         = 0x04,
     EX3         = 0x08,
@@ -22,7 +25,7 @@ enum Collider : unsigned int {
 
 typedef struct colliderData_s {
     colliderData_s() = default;
-    ~colliderData_s() = default;
+    virtual ~colliderData_s() = default;
 
     virtual void assign(struct colliderData_s *other) = 0;
 
@@ -31,8 +34,21 @@ typedef struct colliderData_s {
 typedef struct collider_s : public component_t {
     Collider _colliderType;
     colliderData_t *_colliderData = nullptr;
+    EngineMath::Vector3 _position;
+    EngineMath::Vector3 _velocity;
+    EngineMath::Vector3 _forces;
+    float _mass;
+    float _cor;
+    float _friction;
 
-    explicit collider_s(Collider type = NOCOLLIDER, colliderData_t *colliderData = nullptr) : component_s(Component::COLLIDER), _colliderData(colliderData),  _colliderType(type) {};
+    explicit collider_s(Collider type = NOCOLLIDER, colliderData_t *colliderData = nullptr) :
+    component_s(Component::COLLIDER), _colliderData(colliderData),  _colliderType(type), _mass(1.0f), _cor(0.5f), _friction(0.6f) {};
+
+    ~collider_s() override {
+        if (_colliderData != nullptr) {
+            delete _colliderData;
+        }
+    }
     static component_p createComponent();
 
     void addCollider(Collider type);
@@ -41,13 +57,17 @@ typedef struct collider_s : public component_t {
         struct collider_s *casted = dynamic_cast<collider_s *>(other);
 
         this->_colliderType = casted->_colliderType;
+        this->_position = casted->_position;
+        this->_velocity = casted->_velocity;
+        this->_forces = casted->_forces;
+        this->_mass = casted->_mass;
+        this->_cor = casted->_cor;
+        this->_friction = casted->_friction;
         if (this->_colliderData != nullptr) {
             this->_colliderData->assign(casted->_colliderData);
         }
     };
 
-
-    // TODO A vous de vous démerder pour les datas
 } collider_t;
 
 typedef struct AABBCollider_s : public colliderData_t {
@@ -60,31 +80,6 @@ typedef struct AABBCollider_s : public colliderData_t {
         this->_position = casted->_position;
         this->_size = casted->_size;
     };
-
-    EngineMath::Vector3 getClosestPoint(EngineMath::Vector3 const &point) const {
-        EngineMath::Vector3 min = getMin();
-        EngineMath::Vector3 max = getMax();
-
-        return {
-            fminf(fmaxf(point.x, min.x), max.x),
-            fminf(fmaxf(point.y, min.y), max.y),
-            fminf(fmaxf(point.z, min.z), max.z)
-        };
-    }
-
-    EngineMath::Vector3 getMin() const {
-        EngineMath::Vector3 p1 = _position + _size;
-        EngineMath::Vector3 p2 = _position - _size;
-
-        return EngineMath::Vector3(fminf(p1.x, p2.x), fminf(p1.y, p2.y), fminf(p1.z, p2.z));
-    }
-
-    EngineMath::Vector3 getMax() const {
-        EngineMath::Vector3 p1 = _position + _size;
-        EngineMath::Vector3 p2 = _position - _size;
-
-        return EngineMath::Vector3(fmaxf(p1.x, p2.x), fmaxf(p1.y, p2.y), fmaxf(p1.z, p2.z));
-    }
 
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _size;
@@ -110,7 +105,7 @@ typedef struct OBBCollider_s : public colliderData_t {
     explicit OBBCollider_s(
         EngineMath::Vector3 const &position = EngineMath::Vector3(),
         EngineMath::Vector3 const &size = EngineMath::Vector3(),
-        EngineMath::m3_t const &orientation = { 0, 0, 0, 0, 0, 0, 0, 0, 0 }):
+        EngineMath::m3_t const &orientation = EngineMath::m3_t(1, 0, 0, 0, 1, 0, 0, 0, 1)):
     colliderData_t(), _position(position), _size(size), _orientation(orientation) {};
 
     void assign(struct colliderData_s *other) override {
@@ -121,36 +116,29 @@ typedef struct OBBCollider_s : public colliderData_t {
         this->_orientation = casted->_orientation;
     };
 
-    EngineMath::Vector3 getAxis(int index) {
-        const float* orientation = _orientation[index];
-
-        return {
-            orientation[0],
-            orientation[1],
-            orientation[2]
-        };
-    }
-
-    EngineMath::Vector3 getClosestPoint(EngineMath::Vector3 const &point) {
-        EngineMath::Vector3 result(point);
-        EngineMath::Vector3 direction = point - _position;
-        float sizes[3] = { _size.x, _size.y, _size.z };
-
-        for (int i = 0; i != 3; i += 1) {
-            EngineMath::Vector3 axis = getAxis(i);
-            float distance = direction.dot(axis);
-
-            distance = fmaxf(fminf(distance, sizes[i]), -sizes[i]);
-            result += (axis * distance);
-        }
-
-        return result;
-    }
-
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _size;
     EngineMath::m3_t _orientation;
 } OBBCollider_t;
+
+typedef struct rayCollider_s : public colliderData_t {
+    explicit rayCollider_s(
+        EngineMath::Vector3 const &origin = EngineMath::Vector3(),
+        EngineMath::Vector3 const &direction = EngineMath::Vector3()):
+    colliderData_t(), _origin(origin), _direction(direction) {
+        _direction.normalize();
+    };
+
+    void assign(struct colliderData_s *other) override {
+        struct rayCollider_s *casted = dynamic_cast<rayCollider_s *>(other);
+
+        this->_origin = casted->_origin;
+        this->_direction = casted->_direction;
+    };
+
+    EngineMath::Vector3 _origin;
+    EngineMath::Vector3 _direction;
+} rayCollider_t;
 
 typedef struct capsuleCollider_s : public colliderData_t {
     capsuleCollider_s(EngineMath::Vector3 tip = EngineMath::Vector3(), EngineMath::Vector3 base = EngineMath::Vector3(), float radius = 0):
@@ -167,23 +155,6 @@ typedef struct capsuleCollider_s : public colliderData_t {
         this->_radius = casted->_radius;
     };
 } capsuleCollider_t;
-
-void collider_s::addCollider(Collider type) {
-        _colliderType = type;
-        switch (type) {
-            case SPHERE:
-                _colliderData = new sphereCollider_t ();
-                break;
-            case AABB:
-                _colliderData = new AABBCollider_t ();
-                break;
-            case CAPSULE:
-                _colliderData = new capsuleCollider_t ();
-                break;
-            case NOCOLLIDER:
-                break;
-        }
-}
 
 typedef collider_t * collider_comp;
 

@@ -8,6 +8,16 @@
 #define DEFAULT_WINDOW_X 0
 #define DEFAULT_WINDOW_Y 0
 
+#ifdef _WIN32
+    typedef HINSTANCE WINDOW_INSTANCE;
+    typedef HWND WINDOW_HANDLER;
+#endif
+
+#ifdef __linux__
+    typedef Display* WINDOW_INSTANCE;
+    typedef Window WINDOW_HANDLER;
+#endif
+
 enum WindowInput {
     WI_UNKNOWN = -1,
     WI_ESCAPE,
@@ -175,6 +185,8 @@ public:
     inputList getCurrentlyPressedInput() const {
         return _currentlyPressedInput;
     };
+    virtual WINDOW_INSTANCE getWindowInstance() = 0;
+    virtual WINDOW_HANDLER getWindowHandler() = 0;
 
 protected:
     int _xCoord = DEFAULT_WINDOW_X;

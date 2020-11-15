@@ -28,6 +28,14 @@ class UnixWindow : public IWindow {
             ArcLogger::trace("TRACE: X server disconnected");
         }
 
+        WINDOW_INSTANCE getWindowInstance() override {
+            return _display;
+        }
+
+        WINDOW_HANDLER getWindowHandler() override {
+            return _window;
+        }
+
         void closeWindow() override {
             if (_windowOpened) {
                 XDestroyWindow(_display, _window);

@@ -30,6 +30,14 @@ class WinWindow : public IWindow {
             ArcLogger::trace("TRACE: Window closed");
         }
 
+        WINDOW_INSTANCE getWindowInstance() override {
+            return _instance;
+        }
+
+        WINDOW_HANDLER getWindowHandler() override {
+            return _winHandler;
+        }
+
         void create(WindowSettings settings) override {
             const wchar_t className[] = L"Sample Window Class";
             DWORD colors[] = { RGB(0, 0, 0), RGB(255, 255, 255) };
