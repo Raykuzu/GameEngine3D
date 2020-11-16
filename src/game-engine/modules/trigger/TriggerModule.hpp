@@ -22,7 +22,9 @@ class TriggerModule : public AModule {
         void update(Scene &scene) override {
             for (auto const &t : scene.getTriggers()) {
                 if (t->getType() == ITrigger::INPUT) {
-                    //dynamic_cast<ATrigger<WindowInput> *>(t)->trigger(scene.getLastInput());
+                    for(auto input : scene.getInputs()) {
+                        dynamic_cast<ATrigger<WindowInput> *>(t)->trigger(input);
+                    }
                 }
                 if (t->isTriggered()) {
                     t->apply();
@@ -30,8 +32,11 @@ class TriggerModule : public AModule {
             }
             for (auto const &obj : scene.gameObjects) {
                 for (auto const &t : obj->getTriggers()) {
-                        t->apply();
+                    for(auto input : scene.getInputs()) {
+                        dynamic_cast<ATrigger<WindowInput> *>(t)->trigger(input);
+                    }
                     if (t->isTriggered()) {
+                        t->apply();
                     }
                 }
             }

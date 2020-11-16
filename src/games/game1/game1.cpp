@@ -28,20 +28,70 @@ class Example1Game : public AGame {
 
             _object1->setComponent<collider_comp>(COLLIDER, object1Collider);
 
-            _object1->addTrigger(new InputTrigger(WI_Q, [](sharedGO &self) {
-                std::cout << "EN AVANT TOUTES" << std::endl;
-                // self->getComponent<collider_comp>(COLLIDER)->_position.x -= 50;
-                self->getComponent<camera_comp>(CAMERA)->camera.Pan(EngineMath::Vector3(0.0,0.0, 1), 1);
-            }));
-            // _object1->addTrigger(new InputTrigger(WI_D, [](sharedGO &self) {
-            //     self->getComponent<collider_comp>(COLLIDER)->_position.x += 50;
-            // }));
-            // _object1->addTrigger(new InputTrigger(WI_Z, [](sharedGO &self) {
-            //     self->getComponent<collider_comp>(COLLIDER)->_position.z += 50;
-            // }));
-            // _object1->addTrigger(new InputTrigger(WI_S, [](sharedGO &self) {
-            //     self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
-            // }));
+            InputTrigger *trig = new InputTrigger(WI_Q, [](sharedGO &self) {
+                self->getComponent<collider_comp>(COLLIDER)->_position.x -= 50;
+                self->getComponent<camera_comp>(CAMERA)->camera->Pan(EngineMath::Vector3(0.03,0.0, 0.0), 1);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+            trig = new InputTrigger(WI_D, [](sharedGO &self) {
+                self->getComponent<collider_comp>(COLLIDER)->_position.x += 50;
+                self->getComponent<camera_comp>(CAMERA)->camera->Pan(EngineMath::Vector3(-0.03,0.0, 0.0), 1);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+            trig = new InputTrigger(WI_Z, [](sharedGO &self) {
+                self->getComponent<collider_comp>(COLLIDER)->_position.z += 50;
+                self->getComponent<camera_comp>(CAMERA)->camera->Pan(EngineMath::Vector3(0.0,0.0, -0.03), 1);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+            trig = new InputTrigger(WI_S, [](sharedGO &self) {
+                self->getComponent<camera_comp>(CAMERA)->camera->Pan(EngineMath::Vector3(0.0,0.0, 0.03), 1);
+                self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+
+                        trig = new InputTrigger(WI_SPACE, [](sharedGO &self) {
+                self->getComponent<collider_comp>(COLLIDER)->_position.z += 50;
+                self->getComponent<camera_comp>(CAMERA)->camera->Pan(EngineMath::Vector3(0.0,0.03, 0.0), 1);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+            trig = new InputTrigger(WI_X, [](sharedGO &self) {
+                self->getComponent<camera_comp>(CAMERA)->camera->Pan(EngineMath::Vector3(0.0,-0.03, 0.00), 1);
+                self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+
+            trig = new InputTrigger(WI_RIGHT, [](sharedGO &self) {
+                self->getComponent<camera_comp>(CAMERA)->camera->Rotate(EngineMath::Vector2(0.1,0), 1.0);
+                self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+
+            trig = new InputTrigger(WI_LEFT, [](sharedGO &self) {
+                self->getComponent<camera_comp>(CAMERA)->camera->Rotate(EngineMath::Vector2(-0.1,0), 1.0);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+
+
+            trig = new InputTrigger(WI_UP, [](sharedGO &self) {
+                self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
+                self->getComponent<camera_comp>(CAMERA)->camera->Rotate(EngineMath::Vector2(0,0.1), 1.0);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
+
+            trig = new InputTrigger(WI_DOWN, [](sharedGO &self) {
+                self->getComponent<camera_comp>(CAMERA)->camera->Rotate(EngineMath::Vector2(0,-0.1), 1.0);
+            });
+            trig->setSubject(_object1);
+            _object1->addTrigger(trig);
         }
 
         void term() override {

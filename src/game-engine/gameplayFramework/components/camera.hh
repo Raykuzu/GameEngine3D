@@ -4,9 +4,11 @@
 #include "Camera.hpp"
 
 typedef struct camera_s : public component_t {
-    explicit camera_s(): component_s(Component::CAMERA)  {};
+    explicit camera_s(): component_s(Component::CAMERA)  {
+        camera = new OrbitCamera();
+    };
 
-    OrbitCamera camera;
+    OrbitCamera *camera;
     void assign(struct component_s *other) {
         struct camera_s *casted = dynamic_cast<struct camera_s *>(other);
 

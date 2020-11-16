@@ -1260,9 +1260,13 @@ class PhysicsModule : public AModule {
         void updateVolumeCollider(collider_t *collider, float deltaTime) {
             const float damping = 0.98f;
             EngineMath::Vector3 acceleration = collider->_forces * invertMass(collider);
+            collider->_velocity = collider->_velocity + collider->_inputVelocity;
             collider->_velocity = collider->_velocity + acceleration * deltaTime;
             collider->_velocity = collider->_velocity * damping;
             collider->_position = collider->_position + collider->_velocity * deltaTime;
+            collider->_inputVelocity.x = 0;
+            collider->_inputVelocity.y = 0;
+            collider->_inputVelocity.z = 0;
             synchCollisionVolumes(collider);
         }
 

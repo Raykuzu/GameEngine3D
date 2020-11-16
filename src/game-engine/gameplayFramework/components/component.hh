@@ -9,6 +9,7 @@ enum Component : unsigned int {
     TRANSFORM   = 0x01,
     COLLIDER   = 0x02,
     CAMERA      = 0x04,
+    MODEL      = 0x08,
     /*EX1         = 0x02,
     EX2         = 0x04,
     EX3         = 0x08,

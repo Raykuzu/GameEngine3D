@@ -219,9 +219,9 @@ class GraphicModule : public AModule {
             cube2.rotation = 45;
             cube2.rotationaxis = { 0.0f, 0.0f, 1.0f };
 
-            cube3.pos = { {5.5f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
-                        {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
-            // cube3.pos = { {5.5f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
+            cube3.pos = { {5.5f , -0.2f , 0.6f  }, {5.5f , 0.2f , 0.6f   }, {5.1f , -0.2f , 0.6f   }, {5.1f , 0.2f , 0.6f   },
+                        {5.5f , -0.2f , 1.0f }, {5.5f , 0.2f , 1.0f   }, {5.1f , -0.2f , 1.0f   }, {5.1f , 0.2f , 1.0f   } };
+            // cube3.pos = { {5.5f , -0.2f , 0.6f  }, {5.5f , 0.2f , 0.6f   }, {5.1f , -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
             //             {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
             cube3.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
             cube3.rotation = 45;
@@ -247,7 +247,7 @@ class GraphicModule : public AModule {
             cleanup();
         }
     private:
-    OrbitCamera camera;
+    OrbitCamera *camera;
     VkDebugUtilsMessengerEXT debugMessenger;
     IWindow* renderer;
     WindowSettings windowSettings;
@@ -1695,18 +1695,16 @@ class GraphicModule : public AModule {
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
         UniformBufferObject ubo{};
         
-        camera.Rotate(EngineMath::Vector2(xMouse, yMouse), 1.0f);
         targ.x = playerpos.x;
         targ.y = playerpos.y;
         targ.z = playerpos.z;
         // camera.SetTarget(targ);
-        camera.Pan(EngineMath::Vector3(targ.x, targ.z, targ.y), 1.0f);
         
-        camera.Update(1.0f);
+        camera->Update(1.0f);
         // camera.Pan()
         // ubo.model = camera.GetWorldMatrix();
-        ubo.view = camera.GetViewMatrix();
-        ubo.proj = camera.GetProjectionMatrix();
+        ubo.view = camera->GetViewMatrix();
+        ubo.proj = camera->GetProjectionMatrix();
         //  = EngineMath::Projection(45.0f, swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
 
         ubo.model = EngineMath::AxisAngle(EngineMath::Vector3(0.0f, 1.0f, 0.0f), time * 0);

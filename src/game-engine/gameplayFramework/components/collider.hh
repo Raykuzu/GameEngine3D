@@ -36,6 +36,7 @@ typedef struct collider_s : public component_t {
     Collider _colliderType;
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _velocity;
+    EngineMath::Vector3 _inputVelocity;
     EngineMath::Vector3 _forces;
     float _mass;
     float _cor;
@@ -101,8 +102,6 @@ typedef struct OBBCollider_s : public colliderData_t {
         this->_position = casted->_position;
         this->_size = casted->_size;
         this->_orientation = casted->_orientation;
-    };
-
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _size;
     EngineMath::m3_t _orientation;
@@ -155,6 +154,7 @@ void collider_t::assign(struct component_s *other) {
     this->_colliderType = casted->_colliderType;
     this->_position = casted->_position;
     this->_velocity = casted->_velocity;
+    this->_inputVelocity = casted->_inputVelocity;
     this->_forces = casted->_forces;
     this->_mass = casted->_mass;
     this->_cor = casted->_cor;
