@@ -67,8 +67,7 @@ public:
 
         return inverse;
     }
-    void SetProjection(const EngineMath::m4_t &projection);
-    void SetWorld(const EngineMath::m4_t &view);
+
 
     EngineMath::m4_t GetProjectionMatrix()
     {
@@ -115,7 +114,7 @@ public:
         return true;
     }
 
-    void Camera::OrthoNormalize()
+    void OrthoNormalize()
     {
         EngineMath::Vector3 right = EngineMath::Vector3(m_matWorld._00,
                                                         m_matWorld._01,
@@ -139,7 +138,7 @@ public:
             m_matWorld._31,
             m_matWorld._32, 1.0f);
     }
-    void Camera::Resize(int width, int height)
+    void Resize(int width, int height)
     {
         m_nAspect = (float)width / (float)height;
         if (m_nProjectionMode == 0)
@@ -157,7 +156,7 @@ public:
                                           halfH, -halfH, m_nNear, m_nFar);
         }
     }
-    void Camera::Perspective(float fov, float aspect,
+    void Perspective(float fov, float aspect,
                              float zNear, float zFar)
     {
         m_nFov = fov;
@@ -168,7 +167,7 @@ public:
         m_nProjectionMode = 0;
     }
 
-    void Camera::Orthographic(float width, float height,
+    void Orthographic(float width, float height,
                               float zNear, float zFar)
     {
         m_nWidth = width;
@@ -181,7 +180,7 @@ public:
                                       halfH, -halfH, zNear, zFar);
         m_nProjectionMode = 1;
     }
-    void Camera::SetProjection(const EngineMath::m4_t &projection)
+    void SetProjection(const EngineMath::m4_t &projection)
     {
         m_matProj = projection;
     };
@@ -189,8 +188,9 @@ public:
 
 class OrbitCamera : public Camera
 {
-protected:
+public:
     EngineMath::Vector3 target;
+protected:
     EngineMath::Vector2 panSpeed;
     float zoomDistance;
     EngineMath::Vector2 zoomDistanceLimit; // x = min, y = max;
@@ -198,7 +198,7 @@ protected:
     EngineMath::Vector2 rotationSpeed;
     EngineMath::Vector2 yRotationLimit; // x = min, y = max
     EngineMath::Vector2 currentRotation;
-    float OrbitCamera::ClampAngle(float angle, float min, float max)
+    float ClampAngle(float angle, float min, float max)
     {
         while (angle < -360)
         {
@@ -220,20 +220,20 @@ protected:
     }
 
 public:
-    OrbitCamera::OrbitCamera()
+    OrbitCamera()
     {
         target = EngineMath::Vector3(0, 0, 0);
-        zoomDistance = 10.0f;
+        zoomDistance = 1.0f;
         zoomSpeed = 200.0f;
-        rotationSpeed = EngineMath::Vector2(250.0f, 120.0f);
-        yRotationLimit = EngineMath::Vector2(-20.0f, 80.0f);
+        rotationSpeed = EngineMath::Vector2(10.0f, 10.0f);
+        yRotationLimit = EngineMath::Vector2(-80.0f, 80.0f);
         zoomDistanceLimit = EngineMath::Vector2(3.0f, 15.0f);
         currentRotation = EngineMath::Vector2(0, 0);
-        panSpeed = EngineMath::Vector2(180.0f, 180.0f);
+        panSpeed = EngineMath::Vector2(1.0f, 1.0f);
     }
     inline virtual ~OrbitCamera() {}
 
-    void OrbitCamera::Rotate(const EngineMath::Vector2 &deltaRot,
+    void Rotate(const EngineMath::Vector2 &deltaRot,
                              float deltaTime)
     {
         currentRotation.x += deltaRot.x * rotationSpeed.x * zoomDistance * deltaTime;
@@ -244,7 +244,7 @@ public:
                                        yRotationLimit.x,
                                        yRotationLimit.y);
     }
-    void OrbitCamera::Zoom(float deltaZoom, float deltaTime)
+    void Zoom(float deltaZoom, float deltaTime)
     {
         zoomDistance = zoomDistance + deltaZoom * zoomSpeed * deltaTime;
         if (zoomDistance < zoomDistanceLimit.x)
@@ -256,18 +256,28 @@ public:
             zoomDistance = zoomDistanceLimit.y;
         }
     }
-    void OrbitCamera::Pan(const EngineMath::Vector2 &delataPan,
+    void Pan(const EngineMath::Vector3 &delataPan,
                           float deltaTime)
     {
         EngineMath::Vector3 right(m_matWorld._00,
                                   m_matWorld._01,
                                   m_matWorld._02);
+
+        EngineMath::Vector3 vertical(m_matWorld._10,
+                                  m_matWorld._11,
+                                  m_matWorld._12);
+        EngineMath::Vector3 forward(m_matWorld._20,
+                                  m_matWorld._21,
+                                  m_matWorld._22);
         float xPanMag = delataPan.x * panSpeed.x * deltaTime;
         target = target - (right * xPanMag);
         float yPanMag = delataPan.y * panSpeed.y * deltaTime;
-        target = target + (EngineMath::Vector3(0, 1, 0) * yPanMag);
+        target = target + (vertical * yPanMag);
+        float zPanMag = delataPan.z * panSpeed.y * deltaTime;
+        target = target - (forward * zPanMag);
+
     }
-    void OrbitCamera::Update(float dt)
+    void Update(float dt)
     {
         EngineMath::Vector3 rotation = EngineMath::Vector3(currentRotation.y,
                                                            currentRotation.x,
@@ -280,6 +290,9 @@ public:
         EngineMath::Vector3 position = direction + target;
         m_matWorld = Inverse(
             LookAt(position, target, EngineMath::Vector3(0, 1, 0)));
+    }
+    void SetTarget(EngineMath::Vector3 atarget) {
+        target = atarget;
     }
 };
 

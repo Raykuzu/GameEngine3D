@@ -32,12 +32,20 @@ class Scene {
             return _id;
         }
 
+        void addConstraints(collider_t *constraint) {
+            _constraints.push_back(constraint);
+        }
+
         void addGameObject(sharedGO const &gameObject) {
             gameObjects.push_back(gameObject);
         }
 
         void addTrigger(ITrigger *trigger) {
             _triggers.push_back(trigger);
+        }
+
+        [[nodiscard]] const std::vector<collider_t *> &getConstraints() const {
+            return _constraints;
         }
 
         [[nodiscard]] const std::vector<ITrigger *> &getTriggers() const {
@@ -50,6 +58,7 @@ class Scene {
 
     // sale mais necessaire pour l'instant (voir la saloperie de constness des getters)
         std::vector<sharedGO> gameObjects;
+        
 
     private:
         std::string _id;
@@ -60,4 +69,6 @@ class Scene {
         std::pair<bool, std::string> _changeScene;
 
         std::vector<ITrigger *> _triggers;
+
+        std::vector<collider_t *> _constraints;
 };

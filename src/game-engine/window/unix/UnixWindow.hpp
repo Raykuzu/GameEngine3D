@@ -98,9 +98,8 @@ class UnixWindow : public IWindow {
         }
 
         void resetPointerPos() override {
-            // std::cout << "RESET POINTER" << std::endl;
-            // XWarpPointer(_display, None, _window, 0, 0, 0, 0, _screenCenterX, _screenCenterY);
-            // XFlush(_display);
+            XWarpPointer(_display, None, _window, 0, 0, 0, 0, _screenCenterX, _screenCenterY);
+            XFlush(_display);
         }
 
         WindowEvent getEvent() override {
@@ -212,11 +211,13 @@ class UnixWindow : public IWindow {
             _event.xmotion.y >= _screenCenterY - MOUSE_DEAD_ZONE && _event.xmotion.y <= _screenCenterY + MOUSE_DEAD_ZONE)
                 return windowEvent;
 
+            // std::cout << "EVENT XMOTION X: " << _event.xmotion.x << " | SCREEN CENTER X: " << _screenCenterX << std::endl;
+            // std::cout << "EVENT XMOTION Y: " << _event.xmotion.y << " | SCREEN CENTER Y: " << _screenCenterY << std::endl;
             windowEvent.type = WE_POINTER_MOTION;
             windowEvent.x = _event.xmotion.x - _screenCenterX;
             windowEvent.y = _event.xmotion.y - _screenCenterY;
 
-            resetPointerPos();
+            // resetPointerPos();
 
             return windowEvent;
         }

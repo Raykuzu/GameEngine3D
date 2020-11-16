@@ -21,7 +21,11 @@ typedef std::vector<Line> Lines;
 
 class PhysicsModule : public AModule {
     public:
-        PhysicsModule() = default;
+        PhysicsModule() : _linearProjectionPercent(0.45f), _penetrationSlack(0.01f), _impulseIteration(5) {
+            _colliders1.reserve(100);
+            _colliders2.reserve(100);
+            _results.reserve(100);
+        };
         ~PhysicsModule() override = default;
 
         EngineMath::Vector3 getAxis(OBBCollider_t *collider, int index) const {
@@ -1139,6 +1143,12 @@ class PhysicsModule : public AModule {
         ** COLLIDER PART
         */
 
+       bool doesColliderHaveVolume(collider_t *collider) {
+            if (collider->_colliderType == SPHERE || collider->_colliderType == SPHERE || collider->_colliderType == SPHERE)
+                return true;
+            return false;
+       }
+
        CollisionManifold FindCollisionFeatures(collider_t *a, collider_t *b) {
             CollisionManifold result;
             ResetCollisionManifold(&result);
@@ -1169,9 +1179,9 @@ class PhysicsModule : public AModule {
             return result;
        }
 
-        void ApplyImpulse(collider_t *a, collider_t *b, const CollisionManifold collisionManifold, int c) {
-            float invMassA = InvMass(a);
-            float invMassB = InvMass(b);
+        void applyImpulseToCollider(collider_t *a, collider_t *b, const CollisionManifold collisionManifold, int c, bool isConstraint) {
+            float invMassA = invertMass(a);
+            float invMassB = invertMass(b);
             float invMassSum = invMassA + invMassB;
 
             if (invMassSum == 0.0f) 
@@ -1194,7 +1204,8 @@ class PhysicsModule : public AModule {
 
             EngineMath::Vector3 impulse = relativeNorm * j;
             a->_velocity = a->_velocity - impulse * invMassA;
-            b->_velocity = b->_velocity + impulse * invMassB;
+            if (!isConstraint)
+                b->_velocity = b->_velocity + impulse * invMassB;
 
             EngineMath::Vector3 t = relativeVel - (relativeNorm * relativeVel.dot(relativeNorm));
 
@@ -1221,10 +1232,11 @@ class PhysicsModule : public AModule {
             EngineMath::Vector3 tangentImpuse = t * jt;
 
             a->_velocity = a->_velocity - tangentImpuse * invMassA;
-            b->_velocity = b->_velocity + tangentImpuse * invMassB;
+            if (!isConstraint)
+                b->_velocity = b->_velocity + tangentImpuse * invMassB;
         }
 
-        void SynchCollisionVolumes(collider_t *collider) {
+        void synchCollisionVolumes(collider_t *collider) {
             switch (collider->_colliderType) {
                 case SPHERE:
                     reinterpret_cast<sphereCollider_t*>(collider->_colliderData)->_position = collider->_position;
@@ -1240,7 +1252,7 @@ class PhysicsModule : public AModule {
             }
         }
 
-        float InvMass(collider_t *collider) {
+        float invertMass(collider_t *collider) {
             return (collider->_mass == 0.0f) ? 0.0f : 1.0f / collider->_mass;
         }
 
@@ -1250,11 +1262,11 @@ class PhysicsModule : public AModule {
 
         void updateVolumeCollider(collider_t *collider, float deltaTime) {
             const float damping = 0.98f;
-            EngineMath::Vector3 acceleration = collider->_forces * InvMass(collider);
+            EngineMath::Vector3 acceleration = collider->_forces * invertMass(collider);
             collider->_velocity = collider->_velocity + acceleration * deltaTime;
             collider->_velocity = collider->_velocity * damping;
             collider->_position = collider->_position + collider->_velocity * deltaTime;
-            SynchCollisionVolumes(collider);
+            synchCollisionVolumes(collider);
         }
 
         void applyForcesToVolumeCollider(collider_t *collider) {
@@ -1271,9 +1283,20 @@ class PhysicsModule : public AModule {
                 applyForcesToVolumeCollider(collider);
         }
 
-        // virtual void solveConstraints(collider_t *collider, const std::vector<OBB>& constraints) {
-
-        // }
+        void solveConstraints(collider_t *collider, const std::vector<collider_t *> constraints) {
+            if (!doesColliderHaveVolume(collider))
+                return;
+            for (int i = 0; i < constraints.size(); i += 1) {
+                if (!doesColliderHaveVolume(constraints[i]))
+                    continue;
+                CollisionManifold manifold = FindCollisionFeatures(collider, constraints[i]);
+                if (!manifold.colliding)
+                    continue;
+                for (int j = 0; j < manifold.contacts.size(); j += 1) {
+                    applyImpulseToCollider(collider, constraints[i], manifold, j, true);
+                }
+            }
+        }
 
         void integrate(transform_t *transform, float delta) {
             integrateAcceleration(transform, delta);
@@ -1296,16 +1319,108 @@ class PhysicsModule : public AModule {
             ArcLogger::trace("PhysicsModule::term");
         }
 
-        void update(Scene &scene) override {
-            float delta = 1;
-            ArcLogger::trace("PhysicsModule::update");
-            for (unsigned long int i = 0; i < scene.gameObjects.size(); i++) {
-                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
-                applyForcesToCollider(collider);
-                updateCollider(collider, delta);
-                // //solveConstraints(collider, constraints);
-                // display(transform);
+        void resetUpdate() {
+            _colliders1.clear();
+            _colliders2.clear();
+            _results.clear();
+        }
+
+        float recoverFloatDelta(Scene &scene) {
+            clock_t deltaClock = scene.getTimeDiff();
+            unsigned long millis = deltaClock * 1000 / CLOCKS_PER_SEC;
+            return static_cast<float>(millis) / 1000.0f;
+        }
+
+        void registerCollisions(Scene &scene) {
+            for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
+                for (unsigned long int j = i + 1; j < scene.gameObjects.size(); j += 1) {
+                    CollisionManifold result;
+                    ResetCollisionManifold(&result);
+                    collider_t* colliderA = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+                    collider_t* colliderB = scene.gameObjects[j]->getComponent<collider_t *>(Component::COLLIDER);
+
+                    if (doesColliderHaveVolume(colliderA) && doesColliderHaveVolume(colliderB)) {
+                        result = FindCollisionFeatures(colliderA, colliderB);
+
+                        if (result.colliding) {
+                            _colliders1.push_back(colliderA);
+                            _colliders2.push_back(colliderB);
+                            _results.push_back(result);
+                        }
+                    }
+                }
             }
+        }
+
+        void updateApplyForces(Scene &scene) {
+            for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
+                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+
+                applyForcesToCollider(collider);
+            }
+        }
+
+        void updateApplyImpulse() {
+            for (int k = 0; k < _impulseIteration; k += 1) {
+                for (int i = 0; i < _results.size(); i += 1) {
+                    for (int j = 0; j < _results[i].contacts.size(); j += 1) {
+                        if (doesColliderHaveVolume(_colliders1[i]) && doesColliderHaveVolume(_colliders2[i])) {
+                            applyImpulseToCollider(_colliders1[i], _colliders2[i], _results[i], j, false);
+                        }
+                    }
+                }
+            }
+        }
+
+        void updateAllColliders(Scene &scene) {
+            float delta = recoverFloatDelta(scene);
+
+            for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
+                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+
+                updateCollider(collider, delta);
+            }
+        }
+
+        void handleSinking() {
+            for (int i = 0; i < _results.size(); i += 1) {
+                if (doesColliderHaveVolume(_colliders1[i]) && doesColliderHaveVolume(_colliders2[i])) {
+                    float totalMass = invertMass(_colliders1[i]) + invertMass(_colliders2[i]);
+                    if (totalMass == 0.0f)
+                            continue;
+                    float depth = fmaxf(_results[i].depth - _penetrationSlack, 0.0f);
+                    float scalar = depth / totalMass;
+                    EngineMath::Vector3 correction = _results[i].normal * scalar * _linearProjectionPercent;
+
+                    _colliders1[i]->_position = _colliders1[i]->_position - correction * invertMass(_colliders1[i]);
+                    _colliders2[i]->_position = _colliders2[i]->_position + correction * invertMass(_colliders2[i]);
+
+                    synchCollisionVolumes(_colliders1[i]);
+                    synchCollisionVolumes(_colliders2[i]);
+                }
+            }
+
+            
+        }
+
+        void updateSolveConstraints(Scene &scene) {
+            for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
+                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+
+                solveConstraints(collider, scene.getConstraints());
+            }
+        }
+
+        void update(Scene &scene) override {
+            ArcLogger::trace("PhysicsModule::update");
+
+            resetUpdate();
+            registerCollisions(scene);
+            updateApplyForces(scene);
+            updateApplyImpulse();
+            updateSolveConstraints(scene); // A LA FIN ?
+            updateAllColliders(scene);
+            handleSinking();
         }
 
         // void update(Scene &scene) override {
@@ -1452,4 +1567,12 @@ class PhysicsModule : public AModule {
             ASSERT(tr->_position.y == 19.0f);
             ASSERT(tr->_position.z == 19.0f);
         }
+
+    private:
+        std::vector<collider_t*> _colliders1;
+        std::vector<collider_t*> _colliders2;
+        std::vector<CollisionManifold> _results;
+        float _linearProjectionPercent;
+        float _penetrationSlack;
+        int _impulseIteration;
 };
