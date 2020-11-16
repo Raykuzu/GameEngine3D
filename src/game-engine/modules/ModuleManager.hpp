@@ -15,6 +15,7 @@
 #include "TriggerModule.hpp"
 #include "InputModule.hpp"
 #include "IWindow.hpp"
+#include "GraphicModule.hpp"
 
 class ModuleManager {
     public:
@@ -128,7 +129,8 @@ class ModuleManager {
         std::map<std::string, std::pair<AModule *, bool>> availableModules = {
                 {"trigger", {new TriggerModule(), false}},
                 {"physics", {new PhysicsModule(), false}},
-                {"input", {new InputModule(_window), false}}
+                {"input", {new InputModule(_window), false}},
+                {"graphic", {new GraphicModule(), false}}
         };
 };
 
