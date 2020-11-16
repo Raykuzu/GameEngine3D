@@ -10,7 +10,7 @@ template <typename Compare>
 class ATrigger : public ITrigger {
     public:
 
-        explicit ATrigger(Type const &type, Compare compare) : _compare(compare) {};
+        explicit ATrigger(Type const &type, Compare compare) : _type(type), _compare(compare) {};
         ~ATrigger() override = default;
 
         void trigger(Compare compare) {

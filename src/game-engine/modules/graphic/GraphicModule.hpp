@@ -24,6 +24,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <array>
+#include <AModule.hpp>
 #include "EngineMath.hpp"
 #include "Camera.hpp"
 #ifdef _WIN32
@@ -196,18 +197,20 @@ struct UniformBufferObject {
 
 
 class GraphicModule : public AModule {
-public:
-    void init() {
-        initWindow();
-        initVulkan();
-    }
-    void update(Scene &scene) {
-        mainLoop();
-    }
-    void term() {
-        cleanup();
-    }
-private:
+    public:
+        explicit GraphicModule(IWindow *window) : renderer(window) {}
+
+        void init() override {
+            //initWindow();
+            initVulkan();
+        }
+        void update(Scene &scene) override {
+            mainLoop();
+        }
+        void term() override {
+            cleanup();
+        }
+    private:
     OrbitCamera camera;
     VkDebugUtilsMessengerEXT debugMessenger;
     IWindow* renderer;

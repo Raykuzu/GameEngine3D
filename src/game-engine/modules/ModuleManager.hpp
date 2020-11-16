@@ -130,7 +130,7 @@ class ModuleManager {
                 {"trigger", {new TriggerModule(), false}},
                 {"physics", {new PhysicsModule(), false}},
                 {"input", {new InputModule(_window), false}},
-                {"graphic", {new GraphicModule(), false}}
+                {"graphic", {new GraphicModule(_window), false}}
         };
 };
 
