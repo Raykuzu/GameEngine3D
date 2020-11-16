@@ -21,6 +21,9 @@ class TriggerModule : public AModule {
 
         void update(Scene &scene) override {
             for (auto const &t : scene.getTriggers()) {
+                if (t->getType() == ITrigger::INPUT) {
+                    //dynamic_cast<ATrigger<WindowInput> *>(t)->trigger(scene.getLastInput());
+                }
                 if (t->isTriggered()) {
                     t->apply();
                 }
