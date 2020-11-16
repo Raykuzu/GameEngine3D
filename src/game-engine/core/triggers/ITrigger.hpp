@@ -23,4 +23,6 @@ class ITrigger {
         virtual void setTrigger(bool trigger) = 0;
 
         virtual void setCondition(bool condition) = 0;
+
+        [[nodiscard]] virtual Type const &getType() const = 0;
 };

@@ -34,7 +34,7 @@ class ATrigger : public ITrigger {
             _conditioned = condition;
         }
 
-        [[nodiscard]] Type getType() const {
+        [[nodiscard]] Type const &getType() const override {
             return _type;
         }
 
