@@ -8,11 +8,12 @@
 #include "SceneChange.hpp"
 #include "Scene.hpp"
 
-class SceneTrigger : public ABiTrigger<SceneChange, Scene, sharedGO> {
+template <typename Compare>
+class SceneTrigger : public ABiTrigger<SceneChange<Compare>, Scene, sharedGO> {
     public:
-        SceneTrigger(SceneChange const &sceneChange, std::function<void (Scene &, sharedGO &)> const &triggerFunc)
+        SceneTrigger(SceneChange<Compare> const &sceneChange, std::function<void (Scene &, sharedGO &)> const &triggerFunc)
             : ABiTrigger(ITrigger::SCENE, sceneChange, triggerFunc) {};
-        SceneTrigger(SceneChange const &sceneChange, std::function<bool (Scene const &, sharedGO const &)> const &conditionFunc,
+        SceneTrigger(SceneChange<Compare> const &sceneChange, std::function<bool (Scene const &, sharedGO const &)> const &conditionFunc,
                      std::function<void (Scene &, sharedGO &)> const &triggerFunc)
             : ABiTrigger(ITrigger::SCENE, sceneChange, conditionFunc, triggerFunc) {};
         ~SceneTrigger() override = default;

@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 #include <utility>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 #include "AModule.hpp"
 #include "ArcLogger.hpp"
 #include "collider.hh"

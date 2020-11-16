@@ -56,12 +56,22 @@ class Scene {
             return _changeScene;
         }
 
+        [[nodiscard]] bool exit() const {
+            return _exit;
+        }
+
+        void setExit(bool exit) {
+            _exit = exit;
+        }
+
     // sale mais necessaire pour l'instant (voir la saloperie de constness des getters)
         std::vector<sharedGO> gameObjects;
         
 
     private:
         std::string _id;
+
+        bool _exit = false;
 
         // clock_t is long int
         std::pair<clock_t , clock_t> _time;

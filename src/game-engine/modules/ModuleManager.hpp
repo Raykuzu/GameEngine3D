@@ -8,14 +8,29 @@
 #include <algorithm>
 #include <future>
 #include <cassert>
+#include <UnixWindow.hpp>
 #include "ArcLogger.hpp"
 #include "GlobalConfiguration.hpp"
 #include "PhysicsModule.hpp"
 #include "TriggerModule.hpp"
+#include "InputModule.hpp"
+#include "IWindow.hpp"
 
 class ModuleManager {
     public:
-        ModuleManager() = default;
+        ModuleManager() {
+        #ifdef _WIN32
+            _window = new WinWindow();
+        #endif // _WIN32
+
+        #ifdef __linux__
+            _window = new UnixWindow();
+        #endif // _linux
+
+            WindowSettings windowSettings;
+            _window->create(windowSettings);
+            _window->expose();
+        };
         ~ModuleManager() = default;
 
         void destroyModules() {
@@ -51,11 +66,15 @@ class ModuleManager {
         void run(std::future<void> futureExit) {
             ArcLogger::trace("ModuleManager::run");
             assert(getModuleByName("trigger") != nullptr);
-            while (futureExit.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
-                if (getSceneById(_actualScene).getChangeScene().first) {
+
+            while (_run && futureExit.wait_for(std::chrono::milliseconds(1)) == std::future_status::timeout) {
+                Scene &scene = getSceneById(_actualScene);
+                if (scene.exit())
+                    _run = false;
+                if (scene.getChangeScene().first) {
                     _actualScene = getSceneById(_actualScene).getChangeScene().second;
                 }
-                getSceneById(_actualScene).clock();
+                scene.clock();
                 for (auto module : _modules) {
                     module->update(getSceneById(_actualScene));
                 }
@@ -95,6 +114,7 @@ class ModuleManager {
             }
             throw std::runtime_error("Scene [" + id + "] doesn't exist");
         }
+        bool _run = true;
 
         GlobalConfiguration _configuration;
         std::vector<AModule *> _modules;
@@ -103,9 +123,12 @@ class ModuleManager {
         std::vector<Scene> _scenes;
         std::string _actualScene;
 
+        IWindow *_window;
+
         std::map<std::string, std::pair<AModule *, bool>> availableModules = {
                 {"trigger", {new TriggerModule(), false}},
-                {"physics", {new PhysicsModule(), false}}
+                {"physics", {new PhysicsModule(), false}},
+                {"input", {new InputModule(_window), false}}
         };
 };
 
