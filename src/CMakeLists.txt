@@ -17,6 +17,11 @@ add_library(game-example1 SHARED
         ${COMMON_GAMES}
         ${EXAMPLE1-GAME})
 
+add_library(game1 SHARED
+        ${COMMON_LOGGER}
+        ${COMMON_GAMES}
+        ${GAME1})
+
 if (${UNIX})
     target_link_libraries(game-engine-3D dl)
     target_link_libraries(game-engine-3D pthread)

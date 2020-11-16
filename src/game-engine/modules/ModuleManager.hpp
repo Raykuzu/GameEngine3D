@@ -31,6 +31,15 @@ class ModuleManager {
             WindowSettings windowSettings;
             _window->create(windowSettings);
             _window->expose();
+
+            availableModules["trigger"] = {new TriggerModule(), false};
+            availableModules["physics"] = {new PhysicsModule(), false};
+            availableModules["input"] = {new InputModule(_window), false};
+
+            GraphicModule *graphicModule = new GraphicModule(_window);
+            graphicModule->init();
+    
+            availableModules["graphic"] = {graphicModule, false};
         };
         ~ModuleManager() = default;
 
@@ -93,6 +102,7 @@ class ModuleManager {
 
         void registerGameObject(std::string const &sceneId, sharedGO const &gameObject) {
             ArcLogger::trace("ModuleManager::registerGameObject");
+            std::cout << "registerGameObject: " << sceneId << std::endl;
             getSceneById(sceneId).addGameObject(gameObject);
             _gameObjects.push_back(gameObject);
         }
@@ -122,15 +132,10 @@ class ModuleManager {
         std::vector<sharedGO> _gameObjects;
 
         std::vector<Scene> _scenes;
-        std::string _actualScene;
+        std::string _actualScene = "scene1";
 
         IWindow *_window;
 
-        std::map<std::string, std::pair<AModule *, bool>> availableModules = {
-                {"trigger", {new TriggerModule(), false}},
-                {"physics", {new PhysicsModule(), false}},
-                {"input", {new InputModule(_window), false}},
-                {"graphic", {new GraphicModule(_window), false}}
-        };
+        std::map<std::string, std::pair<AModule *, bool>> availableModules;
 };
 

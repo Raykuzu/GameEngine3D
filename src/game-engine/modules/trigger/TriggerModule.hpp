@@ -27,8 +27,8 @@ class TriggerModule : public AModule {
             }
             for (auto const &obj : scene.gameObjects) {
                 for (auto const &t : obj->getTriggers()) {
-                    if (t->isTriggered()) {
                         t->apply();
+                    if (t->isTriggered()) {
                     }
                 }
             }

@@ -116,9 +116,9 @@ public:
 
     void OrthoNormalize()
     {
-        EngineMath::Vector3 right = EngineMath::Vector3(m_matWorld._00,
-                                                        m_matWorld._01,
-                                                        m_matWorld._02);
+        // EngineMath::Vector3 right = EngineMath::Vector3(m_matWorld._00,
+        //                                                 m_matWorld._01,
+        //                                                 m_matWorld._02);
         EngineMath::Vector3 up = EngineMath::Vector3(m_matWorld._10,
                                                      m_matWorld._11,
                                                      m_matWorld._12);
@@ -279,6 +279,7 @@ public:
     }
     void Update(float dt)
     {
+        (void) dt;
         EngineMath::Vector3 rotation = EngineMath::Vector3(currentRotation.y,
                                                            currentRotation.x,
                                                            0);

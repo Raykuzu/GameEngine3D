@@ -28,6 +28,7 @@ class InputModule : public AModule {
                     scene.setExit(true);
                     break;
                 case WE_INPUT_PRESSED:
+                    scene.setLastInput(event.input);
                     break;
                 case WE_INPUT_RELEASED:
                     break;
@@ -36,6 +37,8 @@ class InputModule : public AModule {
                 case WE_UNKNOWN:
                     break;
             }
+
+            scene.setInputs(_window->getCurrentlyPressedInput());
         }
 
     private:

@@ -20,6 +20,7 @@ class GamePlayFramework {
         }
 
         sharedGO createGameObject(std::string const &sceneId, unsigned int flags) {
+            std::cout << "createGameObject: " << sceneId << std::endl;
             sharedGO gameObject = std::make_shared<GameObject>(flags);
             _moduleManager.registerGameObject(sceneId, gameObject);
             return (gameObject);

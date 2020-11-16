@@ -7,6 +7,7 @@
 #include <utility>
 #include <ctime>
 #include "GameObject.hpp"
+#include "IWindow.hpp"
 
 class Scene {
     public:
@@ -66,7 +67,22 @@ class Scene {
 
     // sale mais necessaire pour l'instant (voir la saloperie de constness des getters)
         std::vector<sharedGO> gameObjects;
-        
+
+        void setInputs(std::vector<WindowInput> inputs) {
+            _currentInputs = inputs;
+        }
+
+        std::vector<WindowInput> getInputs() {
+            return _currentInputs;
+        }
+
+        void setLastInput(WindowInput newInput) {
+            _lastInput = newInput;
+        }
+
+        WindowInput getLastInput() {
+            return _lastInput;
+        }
 
     private:
         std::string _id;
@@ -81,4 +97,8 @@ class Scene {
         std::vector<ITrigger *> _triggers;
 
         std::vector<collider_t *> _constraints;
+
+        WindowInput _lastInput;
+
+        std::vector<WindowInput> _currentInputs;
 };

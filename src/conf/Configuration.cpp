@@ -14,7 +14,11 @@ class Configuration : public IConfiguration {
             ArcLogger::setLogLevel(ArcLogger::TRACE);
             ArcLogger::setLogLevel(ArcLogger::DEBUG);
 
-            _conf.addModule(ModuleConfiguration("physics", 1, {}));
+            _conf.addModule(ModuleConfiguration("input", 1, {}));
+            _conf.addModule(ModuleConfiguration("trigger", 2, {}));
+            _conf.addModule(ModuleConfiguration("physics", 3, {}));
+            _conf.addModule(ModuleConfiguration("graphic", 4, {}));
+
         };
         ~Configuration() override = default;
 

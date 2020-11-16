@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include <cassert>
+#include <assert.h>
 #include <utility>
 #include <algorithm>
-#include <cmath>
+#include <math.h>
 #include "AModule.hpp"
 #include "ArcLogger.hpp"
 #include "collider.hh"
@@ -39,6 +39,8 @@ class PhysicsModule : public AModule {
         }
 
         EngineMath::Vector3 getAxis(AABBCollider_t *collider, int index) const {
+            (void)collider;
+
             EngineMath::Vector3 aabbAxes[3] = {
                 { 1, 0, 0 },
                 { 0, 1, 0 },
@@ -489,7 +491,6 @@ class PhysicsModule : public AModule {
 
             std::vector<EngineMath::Vector3> vertices = getVertices(b);
 
-            EngineMath::Vector3 points[8];
             EngineMath::Vector3 bestPoint;
             float minDistance;
             float currentDistance;
@@ -518,7 +519,6 @@ class PhysicsModule : public AModule {
 
             std::vector<EngineMath::Vector3> vertices = getVertices(b);
 
-            EngineMath::Vector3 points[8];
             EngineMath::Vector3 bestPoint;
             float minDistance;
             float currentDistance;
@@ -648,7 +648,7 @@ class PhysicsModule : public AModule {
             EngineMath::Vector3 normal;
             float depth;
             std::vector<EngineMath::Vector3> contacts;
-        };
+        } CollisionManifold_t;
 
         void ResetCollisionManifold(CollisionManifold* result) {
             if (result != 0) {
@@ -795,8 +795,8 @@ class PhysicsModule : public AModule {
 
             result.reserve(edges.size());
 
-            for (int i = 0; i < planes.size(); i += 1) {
-                for (int j = 0; j < edges.size(); j += 1) {
+            for (unsigned int i = 0; i < planes.size(); i += 1) {
+                for (unsigned int j = 0; j < edges.size(); j += 1) {
                     if (ClipToPlane(planes[i], edges[j], &intersection)) {
                         if (PointInOBB(intersection, obb)) {
                             result.push_back(intersection);
@@ -814,8 +814,8 @@ class PhysicsModule : public AModule {
 
             result.reserve(edges.size());
 
-            for (int i = 0; i < planes.size(); i += 1) {
-                for (int j = 0; j < edges.size(); j += 1) {
+            for (unsigned int i = 0; i < planes.size(); i += 1) {
+                for (unsigned int j = 0; j < edges.size(); j += 1) {
                     if (ClipToPlane(planes[i], edges[j], &intersection)) {
                         if (PointInAABB(intersection, aabb)) {
                             result.push_back(intersection);
@@ -1180,6 +1180,7 @@ class PhysicsModule : public AModule {
        }
 
         void applyImpulseToCollider(collider_t *a, collider_t *b, const CollisionManifold collisionManifold, int c, bool isConstraint) {
+            (void) c;
             float invMassA = invertMass(a);
             float invMassB = invertMass(b);
             float invMassSum = invMassA + invMassB;
@@ -1237,18 +1238,14 @@ class PhysicsModule : public AModule {
         }
 
         void synchCollisionVolumes(collider_t *collider) {
-            switch (collider->_colliderType) {
-                case SPHERE:
-                    reinterpret_cast<sphereCollider_t*>(collider->_colliderData)->_position = collider->_position;
-                    break;
-                case OBB:
-                    reinterpret_cast<OBBCollider_t*>(collider->_colliderData)->_position = collider->_position;
-                    break;
-                case AABB:
-                    reinterpret_cast<AABBCollider_t*>(collider->_colliderData)->_position = collider->_position;
-                    break;
-                default:
-                    break;
+            if (int(collider->_colliderType) == int(Collider::SPHERE)) {
+                reinterpret_cast<sphereCollider_t*>(collider->_colliderData)->_position = collider->_position;
+            }
+            if (int(collider->_colliderType) == int(Collider::OBB)) {
+                reinterpret_cast<OBBCollider_t*>(collider->_colliderData)->_position = collider->_position;
+            }
+            if (int(collider->_colliderType) == int(Collider::AABB)) {
+                reinterpret_cast<AABBCollider_t*>(collider->_colliderData)->_position = collider->_position;
             }
         }
 
@@ -1286,13 +1283,13 @@ class PhysicsModule : public AModule {
         void solveConstraints(collider_t *collider, const std::vector<collider_t *> constraints) {
             if (!doesColliderHaveVolume(collider))
                 return;
-            for (int i = 0; i < constraints.size(); i += 1) {
+            for (unsigned int i = 0; i < constraints.size(); i += 1) {
                 if (!doesColliderHaveVolume(constraints[i]))
                     continue;
                 CollisionManifold manifold = FindCollisionFeatures(collider, constraints[i]);
                 if (!manifold.colliding)
                     continue;
-                for (int j = 0; j < manifold.contacts.size(); j += 1) {
+                for (unsigned int j = 0; j < manifold.contacts.size(); j += 1) {
                     applyImpulseToCollider(collider, constraints[i], manifold, j, true);
                 }
             }
@@ -1319,7 +1316,7 @@ class PhysicsModule : public AModule {
             ArcLogger::trace("PhysicsModule::term");
         }
 
-        void resetUpdate() {
+        void resetUpdate(Scene &scene) {
             _colliders1.clear();
             _colliders2.clear();
             _results.clear();
@@ -1338,6 +1335,9 @@ class PhysicsModule : public AModule {
                     ResetCollisionManifold(&result);
                     collider_t* colliderA = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
                     collider_t* colliderB = scene.gameObjects[j]->getComponent<collider_t *>(Component::COLLIDER);
+                    
+                    if (colliderA == nullptr || colliderB == nullptr)
+                    continue;
 
                     if (doesColliderHaveVolume(colliderA) && doesColliderHaveVolume(colliderB)) {
                         result = FindCollisionFeatures(colliderA, colliderB);
@@ -1355,6 +1355,8 @@ class PhysicsModule : public AModule {
         void updateApplyForces(Scene &scene) {
             for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
                 collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+                if (collider == nullptr)
+                    continue;
 
                 applyForcesToCollider(collider);
             }
@@ -1362,8 +1364,8 @@ class PhysicsModule : public AModule {
 
         void updateApplyImpulse() {
             for (int k = 0; k < _impulseIteration; k += 1) {
-                for (int i = 0; i < _results.size(); i += 1) {
-                    for (int j = 0; j < _results[i].contacts.size(); j += 1) {
+                for (unsigned int i = 0; i < _results.size(); i += 1) {
+                    for (unsigned int j = 0; j < _results[i].contacts.size(); j += 1) {
                         if (doesColliderHaveVolume(_colliders1[i]) && doesColliderHaveVolume(_colliders2[i])) {
                             applyImpulseToCollider(_colliders1[i], _colliders2[i], _results[i], j, false);
                         }
@@ -1377,13 +1379,14 @@ class PhysicsModule : public AModule {
 
             for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
                 collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
-
+                if (collider == nullptr)
+                    continue;
                 updateCollider(collider, delta);
             }
         }
 
         void handleSinking() {
-            for (int i = 0; i < _results.size(); i += 1) {
+            for (unsigned int i = 0; i < _results.size(); i += 1) {
                 if (doesColliderHaveVolume(_colliders1[i]) && doesColliderHaveVolume(_colliders2[i])) {
                     float totalMass = invertMass(_colliders1[i]) + invertMass(_colliders2[i]);
                     if (totalMass == 0.0f)
@@ -1406,19 +1409,21 @@ class PhysicsModule : public AModule {
         void updateSolveConstraints(Scene &scene) {
             for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
                 collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+                if (collider == nullptr)
+                    continue;
 
                 solveConstraints(collider, scene.getConstraints());
             }
         }
 
         void update(Scene &scene) override {
-            ArcLogger::trace("PhysicsModule::update");
+            // ArcLogger::trace("PhysicsModule::update");
 
-            resetUpdate();
+            resetUpdate(scene);
             registerCollisions(scene);
             updateApplyForces(scene);
             updateApplyImpulse();
-            updateSolveConstraints(scene); // A LA FIN ?
+            // updateSolveConstraints(scene); // A LA FIN ?
             updateAllColliders(scene);
             handleSinking();
         }
@@ -1468,7 +1473,7 @@ class PhysicsModule : public AModule {
             sphereCollider_t *sp1 = new sphereCollider_t(EngineMath::Vector3(0.0f,0.0f,0.0f), 1.0f);
             sphereCollider_t *sp2 = new sphereCollider_t(EngineMath::Vector3(2.0f,0.0f,0.0f), 1.0f);
             sphereCollider_t *sp3 = new sphereCollider_t(EngineMath::Vector3(-2.0f,-0.0f,-0.0f), 1.5f);
-            sphereCollider_t *sp4 = new sphereCollider_t(EngineMath::Vector3(-1.0f,5.0f,5.0f), 1.1f);
+            // sphereCollider_t *sp4 = new sphereCollider_t(EngineMath::Vector3(-1.0f,5.0f,5.0f), 1.1f);
             sphereCollider_t *sp5 = new sphereCollider_t(EngineMath::Vector3(2.0f, 2.0f, 2.0f), 1.0f);
             sphereCollider_t *sp6 = new sphereCollider_t(EngineMath::Vector3(1.5f, 1.5f, 1.5f), 1.0f);
 

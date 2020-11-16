@@ -27,6 +27,7 @@
 #include <AModule.hpp>
 #include "EngineMath.hpp"
 #include "Camera.hpp"
+#include "camera.hh"
 #ifdef _WIN32
     #include "WinWindow.hpp"
 #endif // _WIN32
@@ -203,8 +204,43 @@ class GraphicModule : public AModule {
         void init() override {
             //initWindow();
             initVulkan();
+            Object cube;
+            Object cube2;
+            Object cube3;
+            cube.pos = {{-0.5f, -0.2f, 0.6f }, {-0.5f, 0.2f, 0.6f }, {-0.1f, -0.2f, 0.6f }, {-0.1f, 0.2f, 0.6f },
+                        {-0.5f, -0.2f, 1.0f }, {-0.5f, 0.2f, 1.0f }, {-0.1f, -0.2f, 1.0f }, {-0.1f, 0.2f, 1.0f }};
+            cube.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
+            cube.rotation = 0;
+            cube.rotationaxis = { 0.0f, 0.0f, 1.0f };
+
+            cube2.pos = { {0.5f, -0.2f, 0.6f }, {0.5f, 0.2f, 0.6f }, {0.1f, -0.2f, 0.6f }, {0.1f, 0.2f, 0.6f },
+                        {0.5f, -0.2f, 1.0f }, {0.5f, 0.2f, 1.0f }, {0.1f, -0.2f, 1.0f }, {0.1f, 0.2f, 1.0f } };
+            cube2.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
+            cube2.rotation = 45;
+            cube2.rotationaxis = { 0.0f, 0.0f, 1.0f };
+
+            cube3.pos = { {5.5f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
+                        {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
+            // cube3.pos = { {5.5f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
+            //             {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
+            cube3.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
+            cube3.rotation = 45;
+            cube3.rotationaxis = { 0.0f, 0.0f, 1.0f };
+            // std::cout << "creating cube 1" << std::endl;
+            createcube(cube);
+            // std::cout << "creating cube 2" << std::endl;
+            createcube(cube2);
+            createcube(cube3);
+            //createsphere({ 0.5f, -0.2f, 0.6f }, 2.0f);
         }
         void update(Scene &scene) override {
+            for (auto o : scene.gameObjects) {
+                camera_t *tmpCamera = o->getComponent<camera_t*>(Component::CAMERA);
+                if (tmpCamera) {
+                    camera = tmpCamera->camera;
+                    break;
+                }
+            }
             mainLoop();
         }
         void term() override {
@@ -290,7 +326,9 @@ class GraphicModule : public AModule {
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData) {
-
+        (void) messageSeverity;
+        (void) messageType;
+        (void) pUserData;
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
         return VK_FALSE;
@@ -377,13 +415,13 @@ class GraphicModule : public AModule {
         VkInstanceCreateInfo createInfo{};
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
         uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions;
+        //const char** glfwExtensions;
         auto extensions = getRequiredExtensions();
 
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        //glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Hello Triangle";
@@ -1080,15 +1118,15 @@ class GraphicModule : public AModule {
         colorBlending.blendConstants[1] = 0.0f; // Optional
         colorBlending.blendConstants[2] = 0.0f; // Optional
         colorBlending.blendConstants[3] = 0.0f; // Optional
-        VkDynamicState dynamicStates[] = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_LINE_WIDTH
-        };
+        // VkDynamicState dynamicStates[] = {
+        // VK_DYNAMIC_STATE_VIEWPORT,
+        // VK_DYNAMIC_STATE_LINE_WIDTH
+        // };
 
-        VkPipelineDynamicStateCreateInfo dynamicState{};
-        dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicState.dynamicStateCount = 2;
-        dynamicState.pDynamicStates = dynamicStates;
+        // VkPipelineDynamicStateCreateInfo dynamicState{};
+        // dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        // dynamicState.dynamicStateCount = 2;
+        // dynamicState.pDynamicStates = dynamicStates;
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -1268,7 +1306,7 @@ class GraphicModule : public AModule {
     }
 
     void createTextureImageView() {
-        VkImageView newtextureImageView;
+        //VkImageView newtextureImageView;
         textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
@@ -1688,7 +1726,7 @@ class GraphicModule : public AModule {
     }
 EngineMath::Vector3 playerpos;
 
-void drawFrame(WindowEvent event) {
+void drawFrame() {
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1697,41 +1735,6 @@ void drawFrame(WindowEvent event) {
         playerpos.x = 0;
         playerpos.y = 0;
         playerpos.z = 0;
-        std::vector <WindowInput> inputList = renderer->getCurrentlyPressedInput();
-
-        if (std::find(inputList.begin(), inputList.end(), WI_SPACE) != inputList.end()) {
-            playerpos.z = playerpos.z - 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_X) != inputList.end()) {
-            playerpos.z = playerpos.z + 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_Q) != inputList.end()) {
-            playerpos.x = playerpos.x + 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_Q) != inputList.end()) {
-            playerpos.x = playerpos.x + 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_S) != inputList.end()) {
-            playerpos.y = playerpos.y + 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_D) != inputList.end()) {
-            playerpos.x = playerpos.x - 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_Z) != inputList.end()) {
-            playerpos.y = playerpos.y - 0.03;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_UP) != inputList.end()) {
-            yMouse += 1;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_LEFT) != inputList.end()) {
-            xMouse += - 1;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_RIGHT) != inputList.end()) {
-            xMouse += 1;
-        }
-        if (std::find(inputList.begin(), inputList.end(), WI_DOWN) != inputList.end()) {
-            yMouse += - 1;
-        }
         if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
             vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
         }
@@ -1922,80 +1925,18 @@ void drawFrame(WindowEvent event) {
         std::cout << "createSyncObjects();" << std::endl;
         createSyncObjects();
     }
-        float xMouse = 0;
-        float yMouse = 0;
-        
-        int xMomentumMouse = 0;
-        int yMomentumMouse = 0;
+
+    float xMouse = 0;
+    float yMouse = 0;
+    
+    int xMomentumMouse = 0;
+    int yMomentumMouse = 0;
+
     void mainLoop() {
-        auto i = 1.0f;
-        Object cube;
-        Object cube2;
-        Object cube3;
-        cube.pos = {{-0.5f, -0.2f, 0.6f }, {-0.5f, 0.2f, 0.6f }, {-0.1f, -0.2f, 0.6f }, {-0.1f, 0.2f, 0.6f },
-                    {-0.5f, -0.2f, 1.0f }, {-0.5f, 0.2f, 1.0f }, {-0.1f, -0.2f, 1.0f }, {-0.1f, 0.2f, 1.0f }};
-        cube.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
-        cube.rotation = 0;
-        cube.rotationaxis = { 0.0f, 0.0f, 1.0f };
-
-        cube2.pos = { {0.5f, -0.2f, 0.6f }, {0.5f, 0.2f, 0.6f }, {0.1f, -0.2f, 0.6f }, {0.1f, 0.2f, 0.6f },
-                    {0.5f, -0.2f, 1.0f }, {0.5f, 0.2f, 1.0f }, {0.1f, -0.2f, 1.0f }, {0.1f, 0.2f, 1.0f } };
-        cube2.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
-        cube2.rotation = 45;
-        cube2.rotationaxis = { 0.0f, 0.0f, 1.0f };
-
-        cube3.pos = { {5.5f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
-                    {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
-        // cube3.pos = { {5.5f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
-        //             {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
-        cube3.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
-        cube3.rotation = 45;
-        cube3.rotationaxis = { 0.0f, 0.0f, 1.0f };
-        // std::cout << "creating cube 1" << std::endl;
-        createcube(cube);
-        // std::cout << "creating cube 2" << std::endl;
-        createcube(cube2);
-        createcube(cube3);
-        //createsphere({ 0.5f, -0.2f, 0.6f }, 2.0f);
-        WindowEvent event;
-
-
-        
-
-        while (renderer->isOpened()) {
-            event = renderer->getEvent();
-            switch (event.type) {
-            case WE_EXIT:
-                std::cout << "EXIT" << std::endl;
-                break;
-            case WE_INPUT_PRESSED:
-                break;
-            case WE_INPUT_RELEASED:
-                break;
-            case WE_POINTER_MOTION:
-                // std::cout << "CURSOR_POSITION: (" << event.x << ", " << event.y << ")"  << xMomentumMouse << yMomentumMouse<< std::endl;
-                // if (xMomentumMouse > event.x)
-                //     xMouse -=0.01;
-                // else if (xMomentumMouse < event.x)
-                //     xMouse +=0.01;
-                // if (yMomentumMouse > event.y)
-                //     yMouse -=0.01;
-                // else if (yMomentumMouse < event.y)
-                //     yMouse +=0.01;
-                // xMomentumMouse = event.x;
-                // yMomentumMouse = event.y;
-                // // yMouse +=0.01;
-
-                break;
-            default:
-                break;
-            }
-            drawFrame(event);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            i += 0.003;
-        }
-        vkDeviceWaitIdle(device);
+        drawFrame();
+        // vkDeviceWaitIdle(device);
     }
+
     void cleanup() {
         cleanupSwapChain();
 

@@ -21,36 +21,38 @@ class Example1Game : public AGame {
 
             _gamePlayFramework.createScene("scene1");
 
-            _object1 = _gamePlayFramework.createGameObject("scene1", Component::COLLIDER);
+            _object1 = _gamePlayFramework.createGameObject("scene1", Component::COLLIDER | Component::CAMERA);
 
-            OBBCollider_t *obb1 = new OBBCollider_t (EngineMath::Vector3(0.0f, 1.0f, 0.0f), EngineMath::Vector3(0.5f, 1.0f, 0.5f), EngineMath::m3_t(1, 0, 0, 0, 1, 0, 0, 0, 1));
+            OBBCollider_t *obb1 = new OBBCollider_t (EngineMath::Vector3(1.0f, 1.0f, 1.0f), EngineMath::Vector3(0.5f, 1.0f, 0.5f), EngineMath::m3_t(1, 0, 0, 0, 1, 0, 0, 0, 1));
             collider_comp object1Collider = new collider_t(OBB, obb1);
 
             _object1->setComponent<collider_comp>(COLLIDER, object1Collider);
 
             _object1->addTrigger(new InputTrigger(WI_Q, [](sharedGO &self) {
-                self->getComponent<collider_comp>(COLLIDER)->_position.x -= 50;
+                std::cout << "EN AVANT TOUTES" << std::endl;
+                // self->getComponent<collider_comp>(COLLIDER)->_position.x -= 50;
+                self->getComponent<camera_comp>(CAMERA)->camera.Pan(EngineMath::Vector3(0.0,0.0, 1), 1);
             }));
-            _object1->addTrigger(new InputTrigger(WI_D, [](sharedGO &self) {
-                self->getComponent<collider_comp>(COLLIDER)->_position.x += 50;
-            }));
-            _object1->addTrigger(new InputTrigger(WI_Z, [](sharedGO &self) {
-                self->getComponent<collider_comp>(COLLIDER)->_position.z += 50;
-            }));
-            _object1->addTrigger(new InputTrigger(WI_S, [](sharedGO &self) {
-                self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
-            }));
+            // _object1->addTrigger(new InputTrigger(WI_D, [](sharedGO &self) {
+            //     self->getComponent<collider_comp>(COLLIDER)->_position.x += 50;
+            // }));
+            // _object1->addTrigger(new InputTrigger(WI_Z, [](sharedGO &self) {
+            //     self->getComponent<collider_comp>(COLLIDER)->_position.z += 50;
+            // }));
+            // _object1->addTrigger(new InputTrigger(WI_S, [](sharedGO &self) {
+            //     self->getComponent<collider_comp>(COLLIDER)->_position.z -= 50;
+            // }));
         }
 
         void term() override {
             ArcLogger::trace("Example1Game::term");
-
         }
 
         void update() override {
             ArcLogger::trace("Example1Game::update");
-
+            std::cout << "OBJECT 1: (" << _object1->getComponent<collider_comp>(COLLIDER)->_position.x << ", " << _object1->getComponent<collider_comp>(COLLIDER)->_position.y << ", " << _object1->getComponent<collider_comp>(COLLIDER)->_position.z << ")" << std::endl;
         }
+
     private:
         sharedGO _object1;
 };

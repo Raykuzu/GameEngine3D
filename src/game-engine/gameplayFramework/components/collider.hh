@@ -32,8 +32,8 @@ typedef struct colliderData_s {
 } colliderData_t;
 
 typedef struct collider_s : public component_t {
+    colliderData_t *_colliderData;
     Collider _colliderType;
-    colliderData_t *_colliderData = nullptr;
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _velocity;
     EngineMath::Vector3 _forces;
@@ -53,20 +53,7 @@ typedef struct collider_s : public component_t {
 
     void addCollider(Collider type);
 
-    void assign(struct component_s *other) override {
-        struct collider_s *casted = dynamic_cast<collider_s *>(other);
-
-        this->_colliderType = casted->_colliderType;
-        this->_position = casted->_position;
-        this->_velocity = casted->_velocity;
-        this->_forces = casted->_forces;
-        this->_mass = casted->_mass;
-        this->_cor = casted->_cor;
-        this->_friction = casted->_friction;
-        if (this->_colliderData != nullptr) {
-            this->_colliderData->assign(casted->_colliderData);
-        }
-    };
+    void assign(struct component_s *other);
 
 } collider_t;
 
@@ -161,3 +148,32 @@ typedef collider_t * collider_comp;
 component_p collider_t::createComponent() {
     return new collider_t();
 }
+
+void collider_t::assign(struct component_s *other) {
+    struct collider_s *casted = dynamic_cast<collider_s *>(other);
+
+    this->_colliderType = casted->_colliderType;
+    this->_position = casted->_position;
+    this->_velocity = casted->_velocity;
+    this->_forces = casted->_forces;
+    this->_mass = casted->_mass;
+    this->_cor = casted->_cor;
+    this->_friction = casted->_friction;
+    if (this->_colliderData != nullptr) {
+        this->_colliderData->assign(casted->_colliderData);
+    } else {
+        this->_colliderData = casted->_colliderData;
+        this->_colliderData->assign(casted->_colliderData);
+
+    }
+    if (int(this->_colliderType) == int(Collider::SPHERE)) {
+        this->_position = reinterpret_cast<sphereCollider_t*>(this->_colliderData)->_position;
+    }
+    if (int(this->_colliderType) == int(Collider::OBB)) {
+        this->_position = reinterpret_cast<OBBCollider_t*>(this->_colliderData)->_position;
+        std::cout << "OUI" << std::endl;
+    }
+    if (int(this->_colliderType) == int(Collider::AABB)) {
+        this->_position = reinterpret_cast<AABBCollider_t*>(this->_colliderData)->_position;
+    }
+};
