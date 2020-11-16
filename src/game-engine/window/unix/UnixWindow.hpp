@@ -49,7 +49,8 @@ class UnixWindow : public IWindow {
             unsigned long colors[] = { BlackPixel(_display, _screen), WhitePixel(_display, _screen) };
 
             _window = XCreateSimpleWindow(_display, parentWindow, settings.x, settings.y, settings.width, settings.height, settings.borderSize, colors[settings.borderColor], colors[settings.windowColor]);
-            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+            // XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+            XSelectInput(_display, _window, ExposureMask | KeyPressMask | KeyReleaseMask | ButtonPressMask | ButtonReleaseMask);
             _deleteAtom = XInternAtom(_display, "WM_DELETE_WINDOW", False);
             XSetWMProtocols(_display, _window, &_deleteAtom, 1);
 
@@ -103,12 +104,12 @@ class UnixWindow : public IWindow {
         }
 
         WindowEvent getEvent() override {
-            const int eventTypes[] = { ClientMessage, KeyPress, KeyRelease, MotionNotify, ButtonPress, ButtonRelease };
+            const int eventTypes[] = { ClientMessage, KeyPress, KeyRelease/*, MotionNotify*/, ButtonPress, ButtonRelease };
             WindowEvent (UnixWindow::*eventHandlers[])() = {
                 &UnixWindow::handleClientMessage,
                 &UnixWindow::handleKeyPress,
                 &UnixWindow::handleKeyRelease,
-                &UnixWindow::handleMotionNotify,
+                //&UnixWindow::handleMotionNotify,
                 &UnixWindow::handleButtonPress,
                 &UnixWindow::handleButtonReleased,
                 nullptr
@@ -205,11 +206,11 @@ class UnixWindow : public IWindow {
         }
 
         WindowEvent handleMotionNotify() {
-            WindowEvent windowEvent = { WE_UNKNOWN };
+            WindowEvent windowEvent;
 
-            if (_event.xmotion.x >= _screenCenterX - MOUSE_DEAD_ZONE && _event.xmotion.x <= _screenCenterX + MOUSE_DEAD_ZONE &&
-            _event.xmotion.y >= _screenCenterY - MOUSE_DEAD_ZONE && _event.xmotion.y <= _screenCenterY + MOUSE_DEAD_ZONE)
-                return windowEvent;
+            // if (_event.xmotion.x >= _screenCenterX - MOUSE_DEAD_ZONE && _event.xmotion.x <= _screenCenterX + MOUSE_DEAD_ZONE &&
+            // _event.xmotion.y >= _screenCenterY - MOUSE_DEAD_ZONE && _event.xmotion.y <= _screenCenterY + MOUSE_DEAD_ZONE)
+            //     return windowEvent;
 
             // std::cout << "EVENT XMOTION X: " << _event.xmotion.x << " | SCREEN CENTER X: " << _screenCenterX << std::endl;
             // std::cout << "EVENT XMOTION Y: " << _event.xmotion.y << " | SCREEN CENTER Y: " << _screenCenterY << std::endl;

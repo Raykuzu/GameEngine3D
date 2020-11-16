@@ -242,10 +242,11 @@ struct Vertex {
 
 
 std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},// HD 
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},// HG
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    {{10.0f, -0.0f, 10.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},// HD 
+    {{-10.0f, -0.0f, 10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},// HG
+    {{-10.0f, -0.0f, -10.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},//BG
+    {{10.0f, 0.0f, -10.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},//BD
+
     {{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
     {{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
     {{0.5f, 0.5f, 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
@@ -1857,10 +1858,10 @@ void drawFrame(WindowEvent event) {
             yMouse += 1;
         }
         if (std::find(inputList.begin(), inputList.end(), WI_LEFT) != inputList.end()) {
-            xMouse += 1;
+            xMouse += - 1;
         }
         if (std::find(inputList.begin(), inputList.end(), WI_RIGHT) != inputList.end()) {
-            xMouse += - 1;
+            xMouse += 1;
         }
         if (std::find(inputList.begin(), inputList.end(), WI_DOWN) != inputList.end()) {
             yMouse += - 1;

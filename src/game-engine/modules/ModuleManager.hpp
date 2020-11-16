@@ -12,6 +12,7 @@
 #include "GlobalConfiguration.hpp"
 #include "PhysicsModule.hpp"
 #include "TriggerModule.hpp"
+#include "GraphicModule.hpp"
 
 class ModuleManager {
     public:
@@ -105,7 +106,8 @@ class ModuleManager {
 
         std::map<std::string, std::pair<AModule *, bool>> availableModules = {
                 {"trigger", {new TriggerModule(), false}},
-                {"physics", {new PhysicsModule(), false}}
+                {"physics", {new PhysicsModule(), false}},
+                {"module", {new GraphicModule(), false}},
         };
 };
 
