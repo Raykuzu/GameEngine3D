@@ -8,7 +8,8 @@
 #include "component.hh"
 #include "EngineMath.hpp"
 
-#define GRAVITY_CONST EngineMath::Vector3(0.0f, -9.82f, 0.0f)
+#define GRAVITY_CONST EngineMath::Vector3(0.0f, 9.82f, 0.0f)
+// #define GRAVITY_CONST EngineMath::Vector3(0.0f, 0.0f, 0.0f)
 
 enum Collider : unsigned int {
     SPHERE   = 0x01,
@@ -31,21 +32,18 @@ typedef struct colliderData_s {
 
 } colliderData_t;
 
-typedef struct collider_s : public component_t {
+typedef struct rigidBody_s : public component_t {
     colliderData_t *_colliderData;
     Collider _colliderType;
-    EngineMath::Vector3 _position;
-    EngineMath::Vector3 _velocity;
-    EngineMath::Vector3 _inputVelocity;
     EngineMath::Vector3 _forces;
     float _mass;
     float _cor;
     float _friction;
 
-    explicit collider_s(Collider type = NOCOLLIDER, colliderData_t *colliderData = nullptr) :
-    component_s(Component::COLLIDER), _colliderData(colliderData),  _colliderType(type), _mass(1.0f), _cor(0.5f), _friction(0.6f) {};
+    explicit rigidBody_s(Collider type = NOCOLLIDER, colliderData_t *colliderData = nullptr) :
+    component_s(Component::RIGID_BODY), _colliderData(colliderData),  _colliderType(type), _mass(1.0f), _cor(0.5f), _friction(0.6f) {};
 
-    ~collider_s() override {
+    ~rigidBody_s() override {
         if (_colliderData != nullptr) {
             delete _colliderData;
         }
@@ -56,7 +54,7 @@ typedef struct collider_s : public component_t {
 
     void assign(struct component_s *other);
 
-} collider_t;
+} rigidBody_t;
 
 typedef struct AABBCollider_s : public colliderData_t {
     explicit AABBCollider_s(EngineMath::Vector3 const &position = EngineMath::Vector3(), EngineMath::Vector3 const &size = EngineMath::Vector3()):
@@ -102,6 +100,7 @@ typedef struct OBBCollider_s : public colliderData_t {
         this->_position = casted->_position;
         this->_size = casted->_size;
         this->_orientation = casted->_orientation;
+    };
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _size;
     EngineMath::m3_t _orientation;
@@ -142,19 +141,16 @@ typedef struct capsuleCollider_s : public colliderData_t {
     };
 } capsuleCollider_t;
 
-typedef collider_t * collider_comp;
+typedef rigidBody_t * rigidBody_comp_p;
 
-component_p collider_t::createComponent() {
-    return new collider_t();
+component_p rigidBody_t::createComponent() {
+    return new rigidBody_t();
 }
 
-void collider_t::assign(struct component_s *other) {
-    struct collider_s *casted = dynamic_cast<collider_s *>(other);
+void rigidBody_t::assign(struct component_s *other) {
+    struct rigidBody_s *casted = dynamic_cast<rigidBody_s *>(other);
 
     this->_colliderType = casted->_colliderType;
-    this->_position = casted->_position;
-    this->_velocity = casted->_velocity;
-    this->_inputVelocity = casted->_inputVelocity;
     this->_forces = casted->_forces;
     this->_mass = casted->_mass;
     this->_cor = casted->_cor;
@@ -164,16 +160,5 @@ void collider_t::assign(struct component_s *other) {
     } else {
         this->_colliderData = casted->_colliderData;
         this->_colliderData->assign(casted->_colliderData);
-
-    }
-    if (int(this->_colliderType) == int(Collider::SPHERE)) {
-        this->_position = reinterpret_cast<sphereCollider_t*>(this->_colliderData)->_position;
-    }
-    if (int(this->_colliderType) == int(Collider::OBB)) {
-        this->_position = reinterpret_cast<OBBCollider_t*>(this->_colliderData)->_position;
-        std::cout << "OUI" << std::endl;
-    }
-    if (int(this->_colliderType) == int(Collider::AABB)) {
-        this->_position = reinterpret_cast<AABBCollider_t*>(this->_colliderData)->_position;
     }
 };

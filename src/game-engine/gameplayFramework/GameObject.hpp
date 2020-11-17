@@ -13,13 +13,17 @@
 #include "Uuid.hpp"
 #include "transform.hh"
 #include "collider.hh"
+#include "model.hh"
+#include "controller.hh"
 #include "functional"
 #include "camera.hh"
 
 static std::map<Component, std::function<component_p ()>> compMap = {
         {Component::TRANSFORM, transform_t::createComponent},
-        {Component::COLLIDER, collider_t::createComponent},
-        {Component::CAMERA, camera_t::createComponent}
+        {Component::RIGID_BODY, rigidBody_t::createComponent},
+        {Component::CAMERA, camera_t::createComponent},
+        {Component::CONTROLLER, controller_t::createComponent},
+        {Component::MODEL, model_t::createComponent}
 };
 
 class GameObject;

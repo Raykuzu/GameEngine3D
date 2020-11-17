@@ -42,7 +42,6 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av) {
 
     Shell shell;
 
-
     shell.run();
     return (0);
 }
@@ -77,6 +76,8 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av) {
 // #include <array>
 // #include "EngineMath.hpp"
 // #include "Camera.hpp"
+// #define _CRT_SECURE_NO_WARNINGS
+
 // #ifdef _WIN32
 //     #include "WinWindow.hpp"
 // #endif // _WIN32
@@ -1734,6 +1735,8 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av) {
 // EngineMath::Vector3 playerpos;
 
 // void drawFrame(WindowEvent event) {
+//             auto start = std::chrono::system_clock::now();
+
 //         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 //         uint32_t imageIndex;
 //         VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1829,6 +1832,12 @@ int main(__attribute__((unused)) int ac, __attribute__((unused)) char **av) {
 //         else if (result != VK_SUCCESS) {
 //             throw std::runtime_error("failed to present swap chain image!");
 //         }
+//                 auto end = std::chrono::system_clock::now();
+//         std::chrono::duration<double> elapsed_seconds = end-start;
+//         std::time_t end_time = std::chrono::system_clock::to_time_t(end);
+
+//         std::cout << "finished computation at " << std::ctime(&end_time)
+//                 << "elapsed time: " << elapsed_seconds.count() << "s\n";
 //     }
 
 //     void createSyncObjects() {

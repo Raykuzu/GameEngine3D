@@ -7,9 +7,10 @@
 enum Component : unsigned int {
     NO_FLAGS    = 0x00,
     TRANSFORM   = 0x01,
-    COLLIDER   = 0x02,
+    RIGID_BODY   = 0x02,
     CAMERA      = 0x04,
     MODEL      = 0x08,
+    CONTROLLER  = 0x16
     /*EX1         = 0x02,
     EX2         = 0x04,
     EX3         = 0x08,

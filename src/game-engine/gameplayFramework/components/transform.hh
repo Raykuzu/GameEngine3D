@@ -9,7 +9,7 @@
 
 typedef struct transform_s : public component_t {
     explicit transform_s(EngineMath::Vector3 const &position, EngineMath::Vector3 const &velocity = EngineMath::Vector3(), EngineMath::Vector3 const &acceleration = EngineMath::Vector3())
-    : component_s(Component::TRANSFORM), _position(position), _velocity(velocity), _acceleration(acceleration) {};
+    : component_s(Component::TRANSFORM), _position(position), _velocity(velocity), _acceleration(acceleration), _oldPosition(position) {};
 
     void assign(component_p other) override {
         struct transform_s *casted = dynamic_cast<struct transform_s *>(other);
@@ -17,6 +17,7 @@ typedef struct transform_s : public component_t {
         this->_position = casted->_position;
         this->_velocity = casted->_velocity;
         this->_acceleration = casted->_acceleration;
+        this->_oldPosition = casted->_oldPosition;
     }
 
     static component_p createComponent();
@@ -24,6 +25,7 @@ typedef struct transform_s : public component_t {
     EngineMath::Vector3 _position;
     EngineMath::Vector3 _velocity;
     EngineMath::Vector3 _acceleration;
+    EngineMath::Vector3 _oldPosition;
 
 } transform_t;
 

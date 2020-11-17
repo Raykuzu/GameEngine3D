@@ -25,9 +25,14 @@
 #include <fstream>
 #include <array>
 #include <AModule.hpp>
+#include <ctime>
 #include "EngineMath.hpp"
 #include "Camera.hpp"
 #include "camera.hh"
+#include "model.hh"
+#define _CRT_SECURE_NO_WARNINGS
+
+// #include "modul"
 #ifdef _WIN32
     #include "WinWindow.hpp"
 #endif // _WIN32
@@ -55,21 +60,11 @@ const bool enableValidationLayers = true;
 const bool enableValidationLayers = true;
 #endif
 
-struct vector3D {
-    float x;
-    float y;
-    float z;
-};
-
-struct vector2D {
-    float x;
-    float y;
-};
 
 struct Vertex {
-    vector3D pos;
-    vector3D color;
-    vector2D texCoord;
+    EngineMath::Vector3 pos;
+    EngineMath::Vector3 color;
+    EngineMath::Vector2 texCoord;
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -102,12 +97,11 @@ struct Vertex {
     }
 };
 
-
 std::vector<Vertex> vertices = {
-    {{10.0f, -0.0f, 10.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},// HD 
-    {{-10.0f, -0.0f, 10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},// HG
-    {{-10.0f, -0.0f, -10.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},//BG
-    {{10.0f, 0.0f, -10.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},//BD
+    {{1.0f, -0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},// HD 
+    {{-1.0f, -0.0f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},// HG
+    {{-1.0f, -0.0f, -1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},//BG
+    {{1.0f, 0.0f, -1.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},//BD
 
     {{-0.5f, -0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
     {{0.5f, -0.5f, 1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
@@ -167,25 +161,26 @@ std::vector<uint16_t> indices2 = {
     23, 20, 22, 21, 20, 23,
 };
 
-
-
 struct Sphere {
-    vector3D position;
+    EngineMath::Vector3 position;
     float radius;
     std::string texture;
     float rotation;
-    vector3D rotationaxis;
+    EngineMath::Vector3 rotationaxis;
 };
 
 
 
 struct Object {
-    std::vector<vector3D> pos;
+    std::vector<EngineMath::Vector3> pos;
     std::string texture;
     float rotation;
-    vector3D rotationaxis;
+    EngineMath::Vector3 rotationaxis;
 };
 
+struct CreatedObject {
+    std::vector<int> posinorder;
+};
 
 
 struct UniformBufferObject {
@@ -209,13 +204,13 @@ class GraphicModule : public AModule {
             Object cube3;
             cube.pos = {{-0.5f, -0.2f, 0.6f }, {-0.5f, 0.2f, 0.6f }, {-0.1f, -0.2f, 0.6f }, {-0.1f, 0.2f, 0.6f },
                         {-0.5f, -0.2f, 1.0f }, {-0.5f, 0.2f, 1.0f }, {-0.1f, -0.2f, 1.0f }, {-0.1f, 0.2f, 1.0f }};
-            cube.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
+            cube.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/test1.jpg";
             cube.rotation = 0;
             cube.rotationaxis = { 0.0f, 0.0f, 1.0f };
 
             cube2.pos = { {0.5f, -0.2f, 0.6f }, {0.5f, 0.2f, 0.6f }, {0.1f, -0.2f, 0.6f }, {0.1f, 0.2f, 0.6f },
                         {0.5f, -0.2f, 1.0f }, {0.5f, 0.2f, 1.0f }, {0.1f, -0.2f, 1.0f }, {0.1f, 0.2f, 1.0f } };
-            cube2.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
+            cube2.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/test1.jpg";
             cube2.rotation = 45;
             cube2.rotationaxis = { 0.0f, 0.0f, 1.0f };
 
@@ -223,30 +218,49 @@ class GraphicModule : public AModule {
                         {5.5f , -0.2f , 1.0f }, {5.5f , 0.2f , 1.0f   }, {5.1f , -0.2f , 1.0f   }, {5.1f , 0.2f , 1.0f   } };
             // cube3.pos = { {5.5f , -0.2f , 0.6f  }, {5.5f , 0.2f , 0.6f   }, {5.1f , -0.2f + camera.target.y, 0.6f  + camera.target.z }, {5.1f + camera.target.x, 0.2f + camera.target.y, 0.6f   + camera.target.z},
             //             {5.5f + camera.target.x, -0.2f + camera.target.y, 1.0f + camera.target.z}, {5.5f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, -0.2f + camera.target.y, 1.0f   + camera.target.z}, {5.1f + camera.target.x, 0.2f + camera.target.y, 1.0f   + camera.target.z} };
-            cube3.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
+            cube3.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/test1.jpg";
             cube3.rotation = 45;
             cube3.rotationaxis = { 0.0f, 0.0f, 1.0f };
             // std::cout << "creating cube 1" << std::endl;
-            createcube(cube);
-            // std::cout << "creating cube 2" << std::endl;
-            createcube(cube2);
-            createcube(cube3);
+            // createcube(cube);
+            // // std::cout << "creating cube 2" << std::endl;
+            // createcube(cube2);
+            // createcube(cube3);
             //createsphere({ 0.5f, -0.2f, 0.6f }, 2.0f);
         }
         void update(Scene &scene) override {
+            int idx = 1;
             for (auto o : scene.gameObjects) {
                 camera_t *tmpCamera = o->getComponent<camera_t*>(Component::CAMERA);
+                model_t *tmpModel = o->getComponent<model_t*>(Component::MODEL);
+
+                if (tmpModel->_type == MODEL_BOX) {
+                    boxModel_t *box = reinterpret_cast<boxModel_t *>(tmpModel->_modelData);
+                    Object newObj;
+                    if (!tmpModel->_created) {
+                        std::cout << "CREATE CUBE"<< box->model.size() << std::endl;
+                        tmpModel->_created = true;
+                        newObj.pos = box->model;
+
+                        newObj.texture = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/test1.jpg";
+                        createcube(newObj);
+                    }
+                    newObj.pos = box->model;
+                    movecube(idx, newObj);
+                    idx++;
+                }
+                
                 if (tmpCamera) {
                     camera = tmpCamera->camera;
-                    break;
                 }
             }
-            mainLoop();
+            drawFrame();
         }
         void term() override {
             cleanup();
         }
     private:
+    float minei = 0;
     OrbitCamera *camera;
     VkDebugUtilsMessengerEXT debugMessenger;
     IWindow* renderer;
@@ -278,7 +292,9 @@ class GraphicModule : public AModule {
     std::vector<VkFence> imagesInFlight;
     size_t currentFrame = 0;
     std::string texturepath = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/texture.jpg";
-
+    std::vector<Object> ListOfObject;
+    std::vector<CreatedObject> ListOfCreatedObject;
+    
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
@@ -509,7 +525,7 @@ class GraphicModule : public AModule {
 // remember the texture is on the "left" side of the triangle : 
 // Facing an isosceles (any one works, but it's more visual with this particular one) triangle, with the altitude parallel to the side of the screen,
 // and the base parallel to the bottom of the screen, YOU CAN SEE THE TEXTURE, on the other face you don't !!
-    void push_backtriangle(std::vector<vector3D> pos, std::vector<vector2D> texture) {
+    void push_backtriangle(std::vector<EngineMath::Vector3> pos, std::vector<EngineMath::Vector2> texture) {
         for (size_t i = 0; i < pos.size(); i++) {
             Vertex triangle;
             triangle.color = { 0.0f, 0.0f, 0.0f };
@@ -533,16 +549,16 @@ class GraphicModule : public AModule {
         indices.push_back(size - 3);
         indices.push_back(size - 2);
     }
-    void createsphere(vector3D center, double r)
+    void createsphere(EngineMath::Vector3 center, double r)
     {
         const double PI = 3.141592653589793238462643383279502884197;
-        std::vector<vector3D> spherePoints;
+        std::vector<EngineMath::Vector3> spherePoints;
         // Iterate through phi, theta then convert r,theta,phi to  XYZ
         for (double phi = 0.; phi < 2 * PI; phi += PI / 10.) // Azimuth [0, 2PI]
         {
             for (double theta = 0.; theta < PI; theta += PI / 10.) // Elevation [0, PI]
             {
-                vector3D point;
+                EngineMath::Vector3 point;
                 point.x = r * cos(phi) * sin(theta) + center.x;
                 point.y = r * sin(phi) * sin(theta) + center.y;
                 point.z = r * cos(theta) + center.z;
@@ -556,61 +572,49 @@ class GraphicModule : public AModule {
         return;
     }
 
-    void push_backtriangle(std::vector<vector3D> pos, std::vector<vector2D> texture, std::vector<Vertex> &newObject) {
-        for (size_t i = 0; i < pos.size(); i++) {
-            Vertex triangle;
-            triangle.color = { 0.0f, 0.0f, 0.0f };
-            triangle.pos = pos.at(i);
-            triangle.texCoord = texture.at(i);
-            newObject.push_back(triangle);
-        }
-    }
-    void push_backindices(std::vector<uint16_t> &newIndices, std::vector<Vertex> newObject) {
-
-        int size = newObject.size() + 3;
-        newIndices.push_back(size);
-        newIndices.push_back(size - 3);
-        newIndices.push_back(size - 1);
-        newIndices.push_back(size - 2);
-        newIndices.push_back(size - 3);
-        newIndices.push_back(size);
-
-        newIndices.push_back(size - 1);
-        newIndices.push_back(size - 3);
-        newIndices.push_back(size);
-        newIndices.push_back(size);
-        newIndices.push_back(size - 3);
-        newIndices.push_back(size - 2);
-    }
-
-
-
-    void createcube(Object cube) {
-        std::vector<vector3D> lowposx;
-        std::vector<vector3D> highposx;
-        std::vector<vector3D> lowposy;
-        std::vector<vector3D> highposy;
-        std::vector<vector3D> lowposz;
-        std::vector<vector3D> highposz;
-        std::vector<vector2D> texture = { {1.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f} };
-        std::vector<Vertex> newObject;
-        std::vector<uint16_t> newIndices;
-
+   void recreatecube(Object cube) {
+        std::vector<EngineMath::Vector3> lowposx;
+        std::vector<EngineMath::Vector3> highposx;
+        std::vector<EngineMath::Vector3> lowposy;
+        std::vector<EngineMath::Vector3> highposy;
+        std::vector<EngineMath::Vector3> lowposz;
+        std::vector<EngineMath::Vector3> highposz;
+        std::vector<EngineMath::Vector2> texture = { {1.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {0.0f, 0.0f} };
+        CreatedObject cube2;
+        int i = 0;
         for (auto determinepos : cube.pos) {
-            if (lowposx.empty() == true || lowposx.at(0).x == determinepos.x)
+            if (lowposx.empty() == true || lowposx.at(0).x == determinepos.x) {
                 lowposx.push_back(determinepos);
-            else if (highposx.empty() == true || highposx.at(0).x == determinepos.x)
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
+            else if (highposx.empty() == true || highposx.at(0).x == determinepos.x) {
                 highposx.push_back(determinepos);
-            if (lowposy.empty() == true || lowposy.at(0).y == determinepos.y)
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
+            if (lowposy.empty() == true || lowposy.at(0).y == determinepos.y) {
                 lowposy.push_back(determinepos);
-            else if (highposy.empty() == true || highposy.at(0).y == determinepos.y)
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
+            else if (highposy.empty() == true || highposy.at(0).y == determinepos.y) {
                 highposy.push_back(determinepos);
-            if (lowposz.empty() == true || lowposz.at(0).z == determinepos.z)
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
+            if (lowposz.empty() == true || lowposz.at(0).z == determinepos.z) {
                 lowposz.push_back(determinepos);
-            else if (highposz.empty() == true || highposz.at(0).z == determinepos.z)
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
+            else if (highposz.empty() == true || highposz.at(0).z == determinepos.z) {
                 highposz.push_back(determinepos);
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
         }
-        
+        ListOfCreatedObject.push_back(cube2);
         push_backtriangle(lowposx, texture);
         push_backindices();
         push_backtriangle(lowposy, texture);
@@ -623,11 +627,104 @@ class GraphicModule : public AModule {
         push_backindices();
         push_backtriangle(highposz, texture);
         push_backindices();
+
         /*for (auto vertice : vertices) {
                 std::cout << "{ " << vertice.pos.x << ", " << vertice.pos.y << ", " << vertice.pos.z << " }," << std::endl;
-        }*/
-	        std::cout << std::endl;
+        }
+        std::cout << std::endl;*/
         texturepath = cube.texture;
+        recreateSwapChain();
+    }
+
+    void displaypos(EngineMath::Vector3 pos) {
+        std::cout << "{ " << pos.x << ", " << pos.y << ", " << pos.z << " }" << std::endl;
+    }
+
+    void movecube(int id, Object cube) {
+        int realid = id * 24 - 24 + 8; // the + 8 is here because there is a carpet at the beginning of the vertices
+
+        for (int i = 0; i < cube.pos.size(); i++) {
+            vertices.at(ListOfCreatedObject[id - 1].posinorder[i * 3] + realid).pos = cube.pos[i];
+            vertices.at(ListOfCreatedObject[id - 1].posinorder[i * 3 + 1] + realid).pos = cube.pos[i];
+            vertices.at(ListOfCreatedObject[id - 1].posinorder[i * 3 + 2] + realid).pos = cube.pos[i];
+        }
+    }
+
+    void updateCube(int id, Object cube) {
+        movecube(id, cube);
+    }
+
+    void createcube(Object cube) {
+        std::vector<EngineMath::Vector3> lowposx;
+        std::vector<EngineMath::Vector3> highposx;
+        std::vector<EngineMath::Vector3> lowposy;
+        std::vector<EngineMath::Vector3> highposy;
+        std::vector<EngineMath::Vector3> lowposz;
+        std::vector<EngineMath::Vector3> highposz;
+        std::vector<EngineMath::Vector2> texture = { {0.0f, 0.0f}, {0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f} };
+        CreatedObject cube2;
+        int i = 0;
+        int i2 = 4;
+        int j = 8;
+        int j2 = 12;
+        int k = 16;
+        int k2 = 20;
+
+        for (auto determinepos : cube.pos) {
+            if (lowposx.empty() == true || lowposx.at(0).x == determinepos.x) {
+                lowposx.push_back(determinepos);
+                cube2.posinorder.push_back(i);
+                i += 1;
+            }
+            else if (highposx.empty() == true || highposx.at(0).x == determinepos.x) {
+                highposx.push_back(determinepos);
+                cube2.posinorder.push_back(i2);
+                i2 += 1;
+            }
+            if (lowposy.empty() == true || lowposy.at(0).y == determinepos.y) {
+                lowposy.push_back(determinepos);
+                cube2.posinorder.push_back(j);
+                j += 1;
+            }
+            else if (highposy.empty() == true || highposy.at(0).y == determinepos.y) {
+                highposy.push_back(determinepos);
+                cube2.posinorder.push_back(j2);
+                j2 += 1;
+            }
+            if (lowposz.empty() == true || lowposz.at(0).z == determinepos.z) {
+                lowposz.push_back(determinepos);
+                cube2.posinorder.push_back(k);
+                k += 1;
+            }
+            else if (highposz.empty() == true || highposz.at(0).z == determinepos.z) {
+                highposz.push_back(determinepos);
+                cube2.posinorder.push_back(k2);
+                k2 += 1;
+            }
+        }
+        texturepath = "/mnt/9f3085d2-f924-4d30-993d-7e7678baa4e2/Epitech/GameEngine3D/src/game-engine/textures/test1.jpg";
+        ListOfCreatedObject.push_back(cube2);
+        push_backtriangle(lowposx, texture);
+        push_backindices();
+        push_backtriangle(lowposy, texture);
+        push_backindices();
+        push_backtriangle(lowposz, texture);
+        push_backindices();
+        push_backtriangle(highposx, texture);
+        push_backindices();
+        push_backtriangle(highposy, texture);
+        push_backindices();
+        push_backtriangle(highposz, texture);
+        push_backindices();
+        /*std::cout << "pos cube in order :" << std::endl;
+        for (auto pos : ListOfCreatedObject[0].posinorder) {
+            std::cout << pos << ", ";
+        }*/
+        // std::cout << std::endl;
+        /*for (auto vertice : vertices) {
+                std::cout << "{ " << vertice.pos.x << ", " << vertice.pos.y << ", " << vertice.pos.z << " }," << std::endl;
+        }
+        std::cout << std::endl;*/
         recreateSwapChain();
     }
 
@@ -822,7 +919,7 @@ class GraphicModule : public AModule {
         if (enableValidationLayers) {
             createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
             createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-            std::cout << "HEHE: " << deviceExtensions.size() << std::endl;
+            // std::cout << "HEHE: " << deviceExtensions.size() << std::endl;
         }
         else {
             createInfo.enabledLayerCount = 0;
@@ -840,12 +937,10 @@ class GraphicModule : public AModule {
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
         VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
         VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-        std::cout<< "1" << std::endl;
         uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
         if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
-        std::cout<< "2" << std::endl;
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         createInfo.surface = surface;
@@ -855,7 +950,6 @@ class GraphicModule : public AModule {
         createInfo.imageExtent = extent;
         createInfo.imageArrayLayers = 1;
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        std::cout<< "3" << std::endl;
 
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
         uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
@@ -870,15 +964,10 @@ class GraphicModule : public AModule {
             createInfo.queueFamilyIndexCount = 0; // Optional
             createInfo.pQueueFamilyIndices = nullptr; // Optional
         }
-            std::cout<< "4" << std::endl;
     createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-             std::cout<< "4.1" << std::endl;
        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-            std::cout<< "4.2" << std::endl;
         createInfo.presentMode = presentMode;
-            std::cout<< "4.3" << std::endl;
         createInfo.clipped = VK_TRUE;
-            std::cout<< "4.4" << std::endl;
             
         /*createInfo.oldSwapchain = VK_NULL_HANDLE;
         swapChainImageFormat = surfaceFormat.format;
@@ -886,14 +975,12 @@ class GraphicModule : public AModule {
         if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
             throw std::runtime_error("failed to create swap chain!");
         }
-           std::cout<< "5" << std::endl;
      vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
         swapChainImages.resize(imageCount);
         vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
 
         swapChainImageFormat = surfaceFormat.format;
         swapChainExtent = extent;
-         std::cout<< "6" << std::endl;
    }
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
@@ -1208,7 +1295,6 @@ class GraphicModule : public AModule {
             bufferInfo.buffer = uniformBuffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
-            std::cout << "j'ai combien de swapchainimage : " << i << std::endl;
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = textureImageView;
@@ -1725,6 +1811,7 @@ class GraphicModule : public AModule {
 EngineMath::Vector3 playerpos;
 
 void drawFrame() {
+
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
         uint32_t imageIndex;
         VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
@@ -1785,6 +1872,8 @@ void drawFrame() {
         else if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");
         }
+        recreateSwapChain();
+
     }
 
     void createSyncObjects() {
@@ -1841,37 +1930,37 @@ void drawFrame() {
 
         vkDeviceWaitIdle(device);
 
-        cleanupSwapChain();
+        // cleanupSwapChain();
 
-        std::cout << "createSwapChain();" << std::endl;
-        createSwapChain();
-        std::cout << "createImageViews();" << std::endl;
-        createImageViews();
-        std::cout << "createRenderPass();" << std::endl;
-        createRenderPass();
-        std::cout << "createGraphicsPipeline();" << std::endl;
-        createGraphicsPipeline();
-        std::cout << "createDepthResources();" << std::endl;
-        createDepthResources();
-        std::cout << "createFramebuffers();" << std::endl;
-        createFramebuffers();
-        std::cout << "createTextureImage();" << std::endl;
-        createTextureImage();
-        std::cout << "createTextureImageView();" << std::endl;
-        createTextureImageView();
-        std::cout << "createTextureSampler();" << std::endl;
-        createTextureSampler();
-        std::cout << "createVertexBuffer();" << std::endl;
+        // // std::cout << "createSwapChain();" << std::endl;
+        // createSwapChain();
+        // // std::cout << "createImageViews();" << std::endl;
+        // createImageViews();
+        // // std::cout << "createRenderPass();" << std::endl;
+        // createRenderPass();
+        // // std::cout << "createGraphicsPipeline();" << std::endl;
+        // createGraphicsPipeline();
+        // // std::cout << "createDepthResources();" << std::endl;
+        // createDepthResources();
+        // // std::cout << "createFramebuffers();" << std::endl;
+        // createFramebuffers();
+        // // std::cout << "createTextureImage();" << std::endl;
+        // createTextureImage();
+        // // std::cout << "createTextureImageView();" << std::endl;
+        // createTextureImageView();
+        // // std::cout << "createTextureSampler();" << std::endl;
+        // createTextureSampler();
+        // // std::cout << "createVertexBuffer();" << std::endl;
         createVertexBuffer();
-        std::cout << "createIndexBuffer();" << std::endl;
+        // std::cout << "createIndexBuffer();" << std::endl;
         createIndexBuffer();
-        std::cout << "createUniformBuffers();" << std::endl;
+        // std::cout << "createUniformBuffers();" << std::endl;
         createUniformBuffers();
-        std::cout << "createDescriptorPool();" << std::endl;
+        // std::cout << "createDescriptorPool();" << std::endl;
         createDescriptorPool();
-        std::cout << "createDescriptorSets();" << std::endl;
+        // std::cout << "createDescriptorSets();" << std::endl;
         createDescriptorSets();
-        std::cout << "createCommandBuffers();" << std::endl;
+        // std::cout << "createCommandBuffers();" << std::endl;
         createCommandBuffers();
     }
 
@@ -1930,11 +2019,7 @@ void drawFrame() {
     int xMomentumMouse = 0;
     int yMomentumMouse = 0;
 
-    void mainLoop() {
-        drawFrame();
-        // vkDeviceWaitIdle(device);
-    }
-
+        
     void cleanup() {
         cleanupSwapChain();
 

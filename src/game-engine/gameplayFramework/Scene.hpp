@@ -33,7 +33,7 @@ class Scene {
             return _id;
         }
 
-        void addConstraints(collider_t *constraint) {
+        void addConstraint(rigidBody_t *constraint) {
             _constraints.push_back(constraint);
         }
 
@@ -45,7 +45,7 @@ class Scene {
             _triggers.push_back(trigger);
         }
 
-        [[nodiscard]] const std::vector<collider_t *> &getConstraints() const {
+        [[nodiscard]] const std::vector<rigidBody_t *> &getConstraints() const {
             return _constraints;
         }
 
@@ -96,7 +96,7 @@ class Scene {
 
         std::vector<ITrigger *> _triggers;
 
-        std::vector<collider_t *> _constraints;
+        std::vector<rigidBody_t *> _constraints;
 
         WindowInput _lastInput;
 

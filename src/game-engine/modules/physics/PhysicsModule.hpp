@@ -24,6 +24,8 @@ class PhysicsModule : public AModule {
         PhysicsModule() : _linearProjectionPercent(0.45f), _penetrationSlack(0.01f), _impulseIteration(5) {
             _colliders1.reserve(100);
             _colliders2.reserve(100);
+            _transform1.reserve(100);
+            _transform2.reserve(100);
             _results.reserve(100);
         };
         ~PhysicsModule() override = default;
@@ -177,13 +179,14 @@ class PhysicsModule : public AModule {
             std::vector<EngineMath::Vector3> axes = getAxes(obb);
     
             std::vector<EngineMath::Plane> result;
+            result.resize(6);
+
             result[0] = EngineMath::Plane(axes[0], axes[0].dot(obb->_position + axes[0] * obb->_size.x));
             result[1] = EngineMath::Plane(axes[0] * -1.0f, -(axes[0].dot(obb->_position - axes[0] * obb->_size.x)));
             result[2] = EngineMath::Plane(axes[1], axes[1].dot(obb->_position + axes[1] * obb->_size.y));
             result[3] = EngineMath::Plane(axes[1] * -1.0f, -(axes[1].dot(obb->_position - axes[1] * obb->_size.y)));
             result[4] = EngineMath::Plane(axes[2], axes[2].dot(obb->_position + axes[2] * obb->_size.z));
             result[5] = EngineMath::Plane(axes[2] * -1.0f, -(axes[2].dot(obb->_position - axes[2] * obb->_size.z)));
-            result.resize(6);
 
             return result;
         }
@@ -192,13 +195,13 @@ class PhysicsModule : public AModule {
             std::vector<EngineMath::Vector3> axes = getAxes(aabb);
     
             std::vector<EngineMath::Plane> result;
+            result.resize(6);
             result[0] = EngineMath::Plane(axes[0], axes[0].dot(aabb->_position + axes[0] * aabb->_size.x));
             result[1] = EngineMath::Plane(axes[0] * -1.0f, -(axes[0].dot(aabb->_position - axes[0] * aabb->_size.x)));
             result[2] = EngineMath::Plane(axes[1], axes[1].dot(aabb->_position + axes[1] * aabb->_size.y));
             result[3] = EngineMath::Plane(axes[1] * -1.0f, -(axes[1].dot(aabb->_position - axes[1] * aabb->_size.y)));
             result[4] = EngineMath::Plane(axes[2], axes[2].dot(aabb->_position + axes[2] * aabb->_size.z));
             result[5] = EngineMath::Plane(axes[2] * -1.0f, -(axes[2].dot(aabb->_position - axes[2] * aabb->_size.z)));
-            result.resize(6);
 
             return result;
         }
@@ -559,7 +562,7 @@ class PhysicsModule : public AModule {
             return intersect(a, &aabb);
         }
 
-        Intersection intersect(collider_t *a, collider_t *b) const {
+        Intersection intersect(rigidBody_t *a, rigidBody_t *b) const {
             Intersection returnValue = {false, 1};
 
             if (a->_colliderType == NOCOLLIDER || b->_colliderType == NOCOLLIDER)
@@ -1140,16 +1143,16 @@ class PhysicsModule : public AModule {
         }
 
         /*
-        ** COLLIDER PART
+        ** RIGID_BODY PART
         */
 
-       bool doesColliderHaveVolume(collider_t *collider) {
-            if (collider->_colliderType == SPHERE || collider->_colliderType == SPHERE || collider->_colliderType == SPHERE)
+       bool doesColliderHaveVolume(rigidBody_t *collider) {
+            if (collider->_colliderType == SPHERE || collider->_colliderType == AABB || collider->_colliderType == OBB)
                 return true;
             return false;
        }
 
-       CollisionManifold FindCollisionFeatures(collider_t *a, collider_t *b) {
+       CollisionManifold FindCollisionFeatures(rigidBody_t *a, rigidBody_t *b) {
             CollisionManifold result;
             ResetCollisionManifold(&result);
 
@@ -1179,7 +1182,7 @@ class PhysicsModule : public AModule {
             return result;
        }
 
-        void applyImpulseToCollider(collider_t *a, collider_t *b, const CollisionManifold collisionManifold, int c, bool isConstraint) {
+        void applyImpulseToCollider(rigidBody_t *a, rigidBody_t *b, transform_t *aT, transform_t *bT, const CollisionManifold collisionManifold, int c) {
             (void) c;
             float invMassA = invertMass(a);
             float invMassB = invertMass(b);
@@ -1188,7 +1191,7 @@ class PhysicsModule : public AModule {
             if (invMassSum == 0.0f) 
                 return;
 
-            EngineMath::Vector3 relativeVel = b->_velocity - a->_velocity;
+            EngineMath::Vector3 relativeVel = bT->_velocity - aT->_velocity;
             EngineMath::Vector3 relativeNorm = collisionManifold.normal;
 
             relativeNorm.normalize();
@@ -1204,9 +1207,8 @@ class PhysicsModule : public AModule {
                 j /= static_cast<float>(collisionManifold.contacts.size());
 
             EngineMath::Vector3 impulse = relativeNorm * j;
-            a->_velocity = a->_velocity - impulse * invMassA;
-            if (!isConstraint)
-                b->_velocity = b->_velocity + impulse * invMassB;
+            aT->_velocity = aT->_velocity - impulse * invMassA;
+            bT->_velocity = bT->_velocity + impulse * invMassB;
 
             EngineMath::Vector3 t = relativeVel - (relativeNorm * relativeVel.dot(relativeNorm));
 
@@ -1232,59 +1234,123 @@ class PhysicsModule : public AModule {
 
             EngineMath::Vector3 tangentImpuse = t * jt;
 
-            a->_velocity = a->_velocity - tangentImpuse * invMassA;
-            if (!isConstraint)
-                b->_velocity = b->_velocity + tangentImpuse * invMassB;
+            aT->_velocity = aT->_velocity - tangentImpuse * invMassA;
+            bT->_velocity = bT->_velocity + tangentImpuse * invMassB;
         }
 
-        void synchCollisionVolumes(collider_t *collider) {
+        void applyImpulseConstraintToCollider(rigidBody_t *a, rigidBody_t *b, transform_t *aT, transform_t *bT, const CollisionManifold collisionManifold, int c) {
+            (void) c;
+            float invMassA = invertMass(a);
+
+            if (invMassA == 0.0f) 
+                return;
+
+            EngineMath::Vector3 relativeVel = -aT->_velocity;
+            EngineMath::Vector3 relativeNorm = collisionManifold.normal;
+
+            relativeNorm.normalize();
+
+            if (relativeVel.dot(relativeNorm) > 0.0f)
+                return;
+
+            float e = fminf(a->_cor, b->_cor);
+            float numerator = (-(1.0f + e) * relativeVel.dot(relativeNorm));
+            float j = numerator / invMassA;
+
+            if (collisionManifold.contacts.size() > 0.0f && j != 0.0f)
+                j /= static_cast<float>(collisionManifold.contacts.size());
+
+            EngineMath::Vector3 impulse = relativeNorm * j;
+            aT->_velocity = aT->_velocity - impulse * invMassA;
+
+            EngineMath::Vector3 t = relativeVel - (relativeNorm * relativeVel.dot(relativeNorm));
+
+            if (CMP(MagnitudeSq(t), 0.0f))
+                return;
+
+            t.normalize();
+            numerator = -relativeVel.dot(t);
+
+            float jt = numerator / invMassA;
+
+            if (collisionManifold.contacts.size() > 0.0f && jt != 0.0f)
+                jt /= static_cast<float>(collisionManifold.contacts.size());
+
+            if (CMP(jt, 0.0f))
+                return;
+
+            float friction = sqrtf(a->_friction * a->_friction);
+            if (jt> j * friction)
+                jt = j * friction;
+            else if (jt< -j * friction)
+                jt = -j * friction;
+
+            EngineMath::Vector3 tangentImpuse = t * jt;
+
+            aT->_velocity = aT->_velocity - tangentImpuse * invMassA;
+        }
+
+        void synchCollisionVolumes(rigidBody_t *collider, transform_t *transform) {
             if (int(collider->_colliderType) == int(Collider::SPHERE)) {
-                reinterpret_cast<sphereCollider_t*>(collider->_colliderData)->_position = collider->_position;
+                reinterpret_cast<sphereCollider_t*>(collider->_colliderData)->_position = transform->_position;
             }
             if (int(collider->_colliderType) == int(Collider::OBB)) {
-                reinterpret_cast<OBBCollider_t*>(collider->_colliderData)->_position = collider->_position;
+                reinterpret_cast<OBBCollider_t*>(collider->_colliderData)->_position = transform->_position;
             }
             if (int(collider->_colliderType) == int(Collider::AABB)) {
-                reinterpret_cast<AABBCollider_t*>(collider->_colliderData)->_position = collider->_position;
+                reinterpret_cast<AABBCollider_t*>(collider->_colliderData)->_position = transform->_position;
             }
         }
 
-        float invertMass(collider_t *collider) {
+        float invertMass(rigidBody_t *collider) {
             return (collider->_mass == 0.0f) ? 0.0f : 1.0f / collider->_mass;
         }
 
-        void AddLinearImpulse(collider_t *collider, const EngineMath::Vector3& impulse) {
-            collider->_velocity += impulse;
-        }
+        // void AddLinearImpulse(rigidBody_t *collider, const EngineMath::Vector3& impulse) {
+        //     collider->_velocity += impulse;
+        // }
 
-        void updateVolumeCollider(collider_t *collider, float deltaTime) {
+        void updateVolumeCollider(rigidBody_t *collider, transform_t *transform, float deltaTime) {
             const float damping = 0.98f;
-            EngineMath::Vector3 acceleration = collider->_forces * invertMass(collider);
-            collider->_velocity = collider->_velocity + collider->_inputVelocity;
-            collider->_velocity = collider->_velocity + acceleration * deltaTime;
-            collider->_velocity = collider->_velocity * damping;
-            collider->_position = collider->_position + collider->_velocity * deltaTime;
-            collider->_inputVelocity.x = 0;
-            collider->_inputVelocity.y = 0;
-            collider->_inputVelocity.z = 0;
-            synchCollisionVolumes(collider);
+            transform->_acceleration = collider->_forces * invertMass(collider);
+            transform->_velocity = transform->_velocity + transform->_acceleration * deltaTime;
+            transform->_velocity = transform->_velocity * damping;
+            transform->_position = transform->_position + transform->_velocity * deltaTime;
+            synchCollisionVolumes(collider, transform);
         }
 
-        void applyForcesToVolumeCollider(collider_t *collider) {
+        void applyForcesToVolumeCollider(rigidBody_t *collider) {
             collider->_forces = GRAVITY_CONST * collider->_mass;
         }
 
-        void updateCollider(collider_t *collider, float deltaTime) {
+        void updateRigidBody(rigidBody_t *collider, transform_t *transform, float deltaTime) {
             if (collider->_colliderType == SPHERE || collider->_colliderType == AABB || collider->_colliderType == OBB)
-                updateVolumeCollider(collider, deltaTime);
+                updateVolumeCollider(collider, transform, deltaTime);
         }
 
-        void applyForcesToCollider(collider_t *collider) {
+        void applyForcesToCollider(rigidBody_t *collider) {
             if (collider->_colliderType == SPHERE || collider->_colliderType == AABB || collider->_colliderType == OBB)
                 applyForcesToVolumeCollider(collider);
         }
 
-        void solveConstraints(collider_t *collider, const std::vector<collider_t *> constraints) {
+        transform_t getDefaultTransform(rigidBody_t *rigidBody) {
+            EngineMath::Vector3 position;
+
+            if (rigidBody->_colliderType == SPHERE) {
+                position = reinterpret_cast<sphereCollider_t*>(rigidBody->_colliderData)->_position;
+            }
+            if (rigidBody->_colliderType == AABB) {
+                position = reinterpret_cast<AABBCollider_t*>(rigidBody->_colliderData)->_position;
+            }
+            if (rigidBody->_colliderType == OBB) {
+                position = reinterpret_cast<OBBCollider_t*>(rigidBody->_colliderData)->_position;
+            }
+
+            transform_t result(position, {0, 0, 0}, {0, 0, 0});
+            return result;
+        }
+
+        void solveConstraints(rigidBody_t *collider, transform_t *transform, const std::vector<rigidBody_t *> constraints) {
             if (!doesColliderHaveVolume(collider))
                 return;
             for (unsigned int i = 0; i < constraints.size(); i += 1) {
@@ -1293,9 +1359,21 @@ class PhysicsModule : public AModule {
                 CollisionManifold manifold = FindCollisionFeatures(collider, constraints[i]);
                 if (!manifold.colliding)
                     continue;
+                transform_t defaultTransform = getDefaultTransform(constraints[i]);
+                std::cout << "TRANSFORM: (" << defaultTransform._position.x << ", " << defaultTransform._position.y << ", "<<  defaultTransform._position.z << ")" << std::endl;
                 for (unsigned int j = 0; j < manifold.contacts.size(); j += 1) {
-                    applyImpulseToCollider(collider, constraints[i], manifold, j, true);
+                    applyImpulseConstraintToCollider(collider, constraints[i], transform, &defaultTransform, manifold, j);
                 }
+                float totalMass = invertMass(collider) + invertMass(constraints[i]);
+                if (totalMass == 0.0f)
+                        continue;
+                float depth = fmaxf(manifold.depth - _penetrationSlack, 0.0f);
+                float scalar = depth / totalMass;
+                EngineMath::Vector3 correction = manifold.normal * scalar * _linearProjectionPercent;
+
+                transform->_position = transform->_position - correction * invertMass(collider);
+
+                synchCollisionVolumes(collider, transform);
             }
         }
 
@@ -1323,13 +1401,16 @@ class PhysicsModule : public AModule {
         void resetUpdate(Scene &scene) {
             _colliders1.clear();
             _colliders2.clear();
+            _transform1.clear();
+            _transform2.clear();
             _results.clear();
         }
 
         float recoverFloatDelta(Scene &scene) {
-            clock_t deltaClock = scene.getTimeDiff();
-            unsigned long millis = deltaClock * 1000 / CLOCKS_PER_SEC;
-            return static_cast<float>(millis) / 1000.0f;
+            // clock_t deltaClock = scene.getTimeDiff();
+            // unsigned long millis = deltaClock * 1000 / CLOCKS_PER_SEC;
+            // return static_cast<float>(millis) / 1000.0f;
+            return 0.01;
         }
 
         void registerCollisions(Scene &scene) {
@@ -1337,11 +1418,15 @@ class PhysicsModule : public AModule {
                 for (unsigned long int j = i + 1; j < scene.gameObjects.size(); j += 1) {
                     CollisionManifold result;
                     ResetCollisionManifold(&result);
-                    collider_t* colliderA = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
-                    collider_t* colliderB = scene.gameObjects[j]->getComponent<collider_t *>(Component::COLLIDER);
-                    
-                    if (colliderA == nullptr || colliderB == nullptr)
-                    continue;
+                    rigidBody_t *colliderA = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::RIGID_BODY);
+                    rigidBody_t *colliderB = scene.gameObjects[j]->getComponent<rigidBody_t *>(Component::RIGID_BODY);
+                    transform_t *transformA = scene.gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                    transform_t *transformB = scene.gameObjects[j]->getComponent<transform_t *>(Component::TRANSFORM);
+
+
+                    if (colliderA == nullptr || colliderB == nullptr || transformA == nullptr || transformB == nullptr)
+                        continue;
+
 
                     if (doesColliderHaveVolume(colliderA) && doesColliderHaveVolume(colliderB)) {
                         result = FindCollisionFeatures(colliderA, colliderB);
@@ -1349,6 +1434,8 @@ class PhysicsModule : public AModule {
                         if (result.colliding) {
                             _colliders1.push_back(colliderA);
                             _colliders2.push_back(colliderB);
+                            _transform1.push_back(transformA);
+                            _transform2.push_back(transformB);
                             _results.push_back(result);
                         }
                     }
@@ -1358,7 +1445,7 @@ class PhysicsModule : public AModule {
 
         void updateApplyForces(Scene &scene) {
             for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
-                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+                rigidBody_t* collider = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::RIGID_BODY);
                 if (collider == nullptr)
                     continue;
 
@@ -1371,21 +1458,20 @@ class PhysicsModule : public AModule {
                 for (unsigned int i = 0; i < _results.size(); i += 1) {
                     for (unsigned int j = 0; j < _results[i].contacts.size(); j += 1) {
                         if (doesColliderHaveVolume(_colliders1[i]) && doesColliderHaveVolume(_colliders2[i])) {
-                            applyImpulseToCollider(_colliders1[i], _colliders2[i], _results[i], j, false);
+                            applyImpulseToCollider(_colliders1[i], _colliders2[i], _transform1[i], _transform2[i], _results[i], j);
                         }
                     }
                 }
             }
         }
 
-        void updateAllColliders(Scene &scene) {
-            float delta = recoverFloatDelta(scene);
-
+        void updateAllRigidBody(Scene &scene, float delta) {
             for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
-                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
-                if (collider == nullptr)
+                rigidBody_t* collider = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::RIGID_BODY);
+                transform_t* transform = scene.gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                if (collider == nullptr || transform == nullptr)
                     continue;
-                updateCollider(collider, delta);
+                updateRigidBody(collider, transform, delta);
             }
         }
 
@@ -1399,11 +1485,11 @@ class PhysicsModule : public AModule {
                     float scalar = depth / totalMass;
                     EngineMath::Vector3 correction = _results[i].normal * scalar * _linearProjectionPercent;
 
-                    _colliders1[i]->_position = _colliders1[i]->_position - correction * invertMass(_colliders1[i]);
-                    _colliders2[i]->_position = _colliders2[i]->_position + correction * invertMass(_colliders2[i]);
+                    _transform1[i]->_position = _transform1[i]->_position - correction * invertMass(_colliders1[i]);
+                    _transform2[i]->_position = _transform2[i]->_position + correction * invertMass(_colliders2[i]);
 
-                    synchCollisionVolumes(_colliders1[i]);
-                    synchCollisionVolumes(_colliders2[i]);
+                    synchCollisionVolumes(_colliders1[i], _transform1[i]);
+                    synchCollisionVolumes(_colliders2[i], _transform2[i]);
                 }
             }
 
@@ -1412,24 +1498,71 @@ class PhysicsModule : public AModule {
 
         void updateSolveConstraints(Scene &scene) {
             for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
-                collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
-                if (collider == nullptr)
+                rigidBody_t* collider = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::RIGID_BODY);
+                transform_t* transform = scene.gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                if (collider == nullptr || transform == nullptr)
                     continue;
 
-                solveConstraints(collider, scene.getConstraints());
+                solveConstraints(collider, transform, scene.getConstraints());
+            }
+        }
+
+        void updateWithController(Scene &scene, float deltaTime) {
+            for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
+                transform_t* transform = scene.gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                controller_t* controller = scene.gameObjects[i]->getComponent<controller_t *>(Component::CONTROLLER);
+                rigidBody_t* collider = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::RIGID_BODY);
+                if (transform == nullptr || controller == nullptr || collider == nullptr)
+                    continue;
+
+                transform->_position = transform->_position + controller->_shifting * deltaTime;
+                controller->_shifting = { 0, 0, 0 };
+                synchCollisionVolumes(collider, transform);
+            }
+        }
+
+        void updateModel(EngineMath::Vector3 differential, boxModel_t *modelData) {
+            for (unsigned int i = 0; i != modelData->model.size(); i += 1) {
+                modelData->model[i] = modelData->model[i] + differential;
+            }
+        }
+
+        void updateModel(EngineMath::Vector3 differential, sphereModel_t *modelData) {
+            for (unsigned int i = 0; i != modelData->model.size(); i += 1) {
+                modelData->model[i] = modelData->model[i] + differential;
+            }
+        }
+
+        void updateModels(Scene &scene) {
+            for (unsigned long int i = 0; i < scene.gameObjects.size(); i += 1) {
+                transform_t* transform = scene.gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
+                model_t* model = scene.gameObjects[i]->getComponent<model_t *>(Component::MODEL);
+
+                if (transform == nullptr || model == nullptr || transform->_position == transform->_oldPosition)
+                    continue;
+                EngineMath::Vector3 differential = transform->_position - transform->_oldPosition;
+                if (model->_type == MODEL_BOX) {
+                    updateModel(differential, reinterpret_cast<boxModel_t*>(model->_modelData));
+                } else if (model->_type == MODEL_SPHERE) {
+                    updateModel(differential, reinterpret_cast<sphereModel_t*>(model->_modelData));
+                }
+                transform->_oldPosition = transform->_position;
             }
         }
 
         void update(Scene &scene) override {
             // ArcLogger::trace("PhysicsModule::update");
+            float delta = recoverFloatDelta(scene);
 
             resetUpdate(scene);
+            updateWithController(scene, delta);
             registerCollisions(scene);
             updateApplyForces(scene);
             updateApplyImpulse();
-            // updateSolveConstraints(scene); // A LA FIN ?
-            updateAllColliders(scene);
+            updateSolveConstraints(scene);
+            updateAllRigidBody(scene, delta);
             handleSinking();
+            updateModels(scene);
         }
 
         // void update(Scene &scene) override {
@@ -1437,16 +1570,16 @@ class PhysicsModule : public AModule {
         //     ArcLogger::trace("PhysicsModule::update");
         //     for (unsigned long int i = 0; i < scene.gameObjects.size(); i++) {
         //         transform_t* transform = scene.gameObjects[i]->getComponent<transform_t *>(Component::TRANSFORM);
-        //         collider_t* collider = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+        //         rigidBody_t* collider = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::COLLIDER);
         //         integrate(transform, delta);
-        //         scene.gameObjects[i]->setComponent(Component::COLLIDER, new collider_t(Collider::SPHERE, new sphereCollider_t(EngineMath::Vector3(transform->_position), 1.1)));
+        //         scene.gameObjects[i]->setComponent(Component::COLLIDER, new rigidBody_t(Collider::SPHERE, new sphereCollider_t(EngineMath::Vector3(transform->_position), 1.1)));
         //         display(transform);
         //     }
         //     for (unsigned long int i = 0; i < scene.gameObjects.size(); i++) {
-        //         collider_t *colliderA = scene.gameObjects[i]->getComponent<collider_t *>(Component::COLLIDER);
+        //         rigidBody_t *colliderA = scene.gameObjects[i]->getComponent<rigidBody_t *>(Component::COLLIDER);
 
         //         for (unsigned long int j = i + 1; j < scene.gameObjects.size(); j++) {
-        //             collider_t *colliderB = scene.gameObjects[j]->getComponent<collider_t *>(Component::COLLIDER);
+        //             rigidBody_t *colliderB = scene.gameObjects[j]->getComponent<rigidBody_t *>(Component::COLLIDER);
 
         //             Intersection inter = intersect(colliderA, colliderB);
         //             if (inter.collided) {
@@ -1578,8 +1711,10 @@ class PhysicsModule : public AModule {
         }
 
     private:
-        std::vector<collider_t*> _colliders1;
-        std::vector<collider_t*> _colliders2;
+        std::vector<rigidBody_t*> _colliders1;
+        std::vector<rigidBody_t*> _colliders2;
+        std::vector<transform_t*> _transform1;
+        std::vector<transform_t*> _transform2;
         std::vector<CollisionManifold> _results;
         float _linearProjectionPercent;
         float _penetrationSlack;

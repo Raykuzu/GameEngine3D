@@ -19,6 +19,10 @@ class GamePlayFramework {
             _moduleManager.getScene(id).addTrigger(trigger);
         }
 
+        void addConstraintToScene(std::string const &id, rigidBody_t *constraint) {
+            _moduleManager.getScene(id).addConstraint(constraint);
+        }
+
         sharedGO createGameObject(std::string const &sceneId, unsigned int flags) {
             std::cout << "createGameObject: " << sceneId << std::endl;
             sharedGO gameObject = std::make_shared<GameObject>(flags);
